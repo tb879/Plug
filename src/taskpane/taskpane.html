@@ -3,12 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <title>ECCP Taskpane</title>
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <link rel="stylesheet" href="taskpane.css" />
   </head>
   <body>
     <h2>ECCP Compliance Tools</h2>
     <button onclick="newDocument()">New Document</button>
+    <button onclick="insertMetadata()">Insert Metadata</button>
     <button onclick="saveAndCommit()">Save & Commit Revision</button>
     <button onclick="editMetadata()">Edit Metadata</button>
     <button onclick="trackChanges()">Track Changes</button>
@@ -17,6 +16,7 @@
     <button onclick="exportPDF()">Export to PDF</button>
     <button onclick="viewChangeLog()">View Change Log</button>
     <p id="status"></p>
+
     <script src="taskpane.js"></script>
   </body>
 </html>

@@ -10,7 +10,7 @@
   <ProviderName>ECCP</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="ECCP Compliance Tools"/>
-  <Description DefaultValue="Excel plugin for revision control"/>
+  <Description DefaultValue="Document control and revision management inside Excel."/>
   <IconUrl DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
   <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
 
@@ -35,41 +35,22 @@
               <Group id="GroupECCP">
                 <Label resid="groupLabel"/>
 
-                <Control xsi:type="Button" id="btnCommitRev">
-                  <Label resid="commitRevLabel"/>
+                <Control xsi:type="Button" id="btnTaskPane">
+                  <Label resid="buttonLabel"/>
                   <Supertip>
-                    <Title resid="commitRevLabel"/>
-                    <Description resid="commitRevDesc"/>
+                    <Title resid="buttonLabel"/>
+                    <Description resid="buttonDescription"/>
                   </Supertip>
                   <Icon>
                     <bt:Image size="32" resid="icon32"/>
                   </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                    <FunctionName>saveAndCommit</FunctionName>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskpaneUrl"/>
                   </Action>
                 </Control>
 
-                <Control xsi:type="Button" id="btnViewChangeLog">
-                  <Label resid="viewLogLabel"/>
-                  <Supertip>
-                    <Title resid="viewLogLabel"/>
-                    <Description resid="viewLogDesc"/>
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="32" resid="icon32"/>
-                  </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                    <FunctionName>viewChangeLog</FunctionName>
-                  </Action>
-                </Control>
               </Group>
             </OfficeTab>
-          </ExtensionPoint>
-
-          <ExtensionPoint xsi:type="CustomFunctions" >
-            <Script>
-              <SourceLocation resid="functionFile" />
-            </Script>
           </ExtensionPoint>
 
         </DesktopFormFactor>
@@ -80,19 +61,14 @@
       <bt:Images>
         <bt:Image id="icon32" DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
       </bt:Images>
-
       <bt:Urls>
         <bt:Url id="functionFile" DefaultValue="https://tb879.github.io/Plug/src/commands/commands.html"/>
+        <bt:Url id="taskpaneUrl" DefaultValue="https://tb879.github.io/Plug/src/taskpane/taskpane.html"/>
       </bt:Urls>
-
       <bt:ShortStrings>
-        <bt:String id="groupLabel" DefaultValue="ECCP Actions"/>
-
-        <bt:String id="commitRevLabel" DefaultValue="Save & Commit"/>
-        <bt:String id="commitRevDesc" DefaultValue="Commit and update revision metadata"/>
-
-        <bt:String id="viewLogLabel" DefaultValue="View Log"/>
-        <bt:String id="viewLogDesc" DefaultValue="Display full change log"/>
+        <bt:String id="groupLabel" DefaultValue="ECCP Tools"/>
+        <bt:String id="buttonLabel" DefaultValue="ECCP Panel"/>
+        <bt:String id="buttonDescription" DefaultValue="Open ECCP Compliance Tools"/>
       </bt:ShortStrings>
     </Resources>
   </VersionOverrides>
