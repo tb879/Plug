@@ -95,3 +95,12 @@ module.exports = async (env, options) => {
 
   return config;
 };
+
+export default defineConfig({
+  define: {
+    global: {},
+  },
+  optimizeDeps: {
+    include: ["@microsoft/office-js"],
+  },
+});

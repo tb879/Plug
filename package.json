@@ -26,6 +26,7 @@
     "watch": "webpack --mode development --watch"
   },
   "dependencies": {
+    "@microsoft/office-js": "^1.1.110",
     "core-js": "^3.36.0",
     "regenerator-runtime": "^0.14.1"
   },
