@@ -2,6 +2,13 @@ Office.onReady(() => {
   console.log("ECCP ribbon commands ready.");
 });
 
+function openDialog() {
+  Office.context.ui.displayDialogAsync(
+    "https://tb879.github.io/Plug/src/taskpane/taskpane.html",
+    { height: 50, width: 40 }
+  );
+}
+
 // Export all functions used in the ribbon
 function saveAndCommit() {
   Excel.run(async (context) => {

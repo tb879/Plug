@@ -36,15 +36,16 @@
                 <Label resid="groupLabel"/>
 
                 <Control xsi:type="Button" id="btnTaskPane">
-                  <Label resid="buttonLabel"/>
+                  <Label resid="openDialogLabel"/>
                   <Supertip>
-                    <Title resid="buttonLabel"/>
-                    <Description resid="buttonDescription"/>
+                    <Title resid="openDialogLabel"/>
+                    <Description resid="openDialogDesc"/>
                   </Supertip>
                   <Icon>
                     <bt:Image size="32" resid="icon32"/>
                   </Icon>
-                  <Action xsi:type="ShowTaskpane">
+                  <Action xsi:type="ExecuteFunction">
+                   <FunctionName>openDialog</FunctionName>
                     <SourceLocation resid="taskpaneUrl"/>
                   </Action>
                 </Control>
