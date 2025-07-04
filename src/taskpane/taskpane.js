@@ -1,5 +1,6 @@
 Office.onReady(() => {
-  document.getElementById("insertMetadata").onclick = insertMetadata;
+  window.insertMetadata = insertMetadata;
+  // document.getElementById("insertMetadata").onclick = insertMetadata;
   document.getElementById("enableTracking").onclick = trackChanges;
   document.getElementById("commitRevision").onclick = saveAndCommit;
   document.getElementById("see").onclick = unhideAllSheets;

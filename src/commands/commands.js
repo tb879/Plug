@@ -1,3 +1,5 @@
+const Office = require("O")
+
 Office.onReady(() => {
   console.log("ECCP Compliance Tools loaded.");
 });
