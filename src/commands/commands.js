@@ -35,10 +35,18 @@ function saveAndCommit() {
 }
 
 function viewChangeLog() {
-  Office.context.ui.displayDialogAsync(
-    "https://tb879.github.io/Plug/taskpane.html?view=log",
-    { height: 50, width: 40, displayInIframe: true }
-  );
+  console.log("COMMANDS.....");
+
+  Excel.run(async (context) => {
+    const sheets = context.workbook.worksheets;
+    sheets.load("items");
+    await context.sync();
+    sheets.items.forEach(sheet => {
+      sheet.visibility = Excel.SheetVisibility.visible;
+    });
+    await context.sync();
+    console.log("All sheets made visible.");
+  });
 }
 
 // Expose globally

@@ -102,6 +102,7 @@ function viewChangeLog() {
   // Office.context.ui.displayDialogAsync("https://tb879.github.io/Plug/taskpane.html?view=log", {
   //   height: 50, width: 40
   // });
+console.log("TASK....");
 
   Excel.run(async (context) => {
     const sheets = context.workbook.worksheets;
