@@ -11,21 +11,15 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="ECCP Compliance Tools"/>
   <Description DefaultValue="Excel plugin for revision control"/>
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-  <SupportUrl DefaultValue="https://localhost:3000"/>
+  <IconUrl DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
+  <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
 
   <Hosts>
     <Host Name="Workbook"/>
   </Hosts>
 
-  <Requirements>
-    <Sets DefaultMinVersion="1.1">
-      <Set Name="Workbook" />
-    </Sets>
-  </Requirements>
-
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3000/src/commands/commands.html"/>
+    <SourceLocation DefaultValue="https://tb879.github.io/Plug/taskpane.html"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -37,24 +31,9 @@
           <FunctionFile resid="functionFile"/>
 
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
-            <CustomTab id="TabECCP">
-              <Label resid="tabLabel"/>
+            <OfficeTab id="TabHome">
               <Group id="GroupECCP">
                 <Label resid="groupLabel"/>
-
-                <Control xsi:type="Button" id="btnNewDoc">
-                  <Label resid="newDocLabel"/>
-                  <Supertip>
-                    <Title resid="newDocLabel"/>
-                    <Description resid="newDocDesc"/>
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="32" resid="icon32"/>
-                  </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                    <FunctionName>newDocument</FunctionName>
-                  </Action>
-                </Control>
 
                 <Control xsi:type="Button" id="btnCommitRev">
                   <Label resid="commitRevLabel"/>
@@ -70,47 +49,50 @@
                   </Action>
                 </Control>
 
-                <Control xsi:type="Button" id="btnTrackChanges">
-                  <Label resid="trackLabel"/>
+                <Control xsi:type="Button" id="btnViewChangeLog">
+                  <Label resid="viewLogLabel"/>
                   <Supertip>
-                    <Title resid="trackLabel"/>
-                    <Description resid="trackDesc"/>
+                    <Title resid="viewLogLabel"/>
+                    <Description resid="viewLogDesc"/>
                   </Supertip>
                   <Icon>
                     <bt:Image size="32" resid="icon32"/>
                   </Icon>
                   <Action xsi:type="ExecuteFunction">
-                    <FunctionName>trackChanges</FunctionName>
+                    <FunctionName>viewChangeLog</FunctionName>
                   </Action>
                 </Control>
-
               </Group>
-            </CustomTab>
+            </OfficeTab>
           </ExtensionPoint>
+
+          <ExtensionPoint xsi:type="CustomFunctions" >
+            <Script>
+              <SourceLocation resid="functionFile" />
+            </Script>
+          </ExtensionPoint>
+
         </DesktopFormFactor>
       </Host>
     </Hosts>
 
     <Resources>
       <bt:Images>
-        <bt:Image id="icon32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="icon32" DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
       </bt:Images>
 
       <bt:Urls>
-        <bt:Url id="functionFile" DefaultValue="https://localhost:3000/src/commands/commands.html"/>
+        <bt:Url id="functionFile" DefaultValue="https://tb879.github.io/Plug/src/commands/commands.html"/>
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="tabLabel" DefaultValue="Compliance Tools"/>
-        <bt:String id="groupLabel" DefaultValue="ECCP Group"/>
-        <bt:String id="newDocLabel" DefaultValue="New Document"/>
-        <bt:String id="newDocDesc" DefaultValue="Create a new ECCP document"/>
+        <bt:String id="groupLabel" DefaultValue="ECCP Actions"/>
 
-        <bt:String id="commitRevLabel" DefaultValue="Save & Commit Revision"/>
-        <bt:String id="commitRevDesc" DefaultValue="Save and increase the revision"/>
+        <bt:String id="commitRevLabel" DefaultValue="Save & Commit"/>
+        <bt:String id="commitRevDesc" DefaultValue="Commit and update revision metadata"/>
 
-        <bt:String id="trackLabel" DefaultValue="Track Changes"/>
-        <bt:String id="trackDesc" DefaultValue="Enable change tracking"/>
+        <bt:String id="viewLogLabel" DefaultValue="View Log"/>
+        <bt:String id="viewLogDesc" DefaultValue="Display full change log"/>
       </bt:ShortStrings>
     </Resources>
   </VersionOverrides>
