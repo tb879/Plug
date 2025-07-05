@@ -4,6 +4,14 @@ Office.onReady((info) => {
 });
 
 async function saveVersion() {
+  const commentInput = document.getElementById("comment");
+  const comment = commentInput ? commentInput.value.trim() : "";
+
+  if (!comment) {
+    alert("Please enter a comment before saving the revision.");
+    return;
+  }
+
   try {
     await Excel.run(async (context) => {
       Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
@@ -23,7 +31,7 @@ async function saveVersion() {
                 } else {
                   file.closeAsync();
                   const blob = new Blob(slices);
-                  saveAsJSON(blob);
+                  saveAsJSON(blob, comment);
                 }
               } else {
                 console.error("Failed to get slice", sliceResult.error.message);
@@ -42,7 +50,7 @@ async function saveVersion() {
   }
 }
 
-function saveAsJSON(blob) {
+function saveAsJSON(blob, comment) {
   const reader = new FileReader();
 
   reader.onload = () => {
@@ -51,7 +59,7 @@ function saveAsJSON(blob) {
       filename: `excel-version-${new Date().toISOString()}.xlsx`,
       user: "unknown",
       timestamp: new Date().toISOString(),
-      comment: "COMMENT",
+      comment,
       fileData: base64Data,
     };
 
