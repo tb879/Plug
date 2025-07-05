@@ -1,22 +1,9 @@
 // Wait for Office.js to be ready
 Office.onReady((info) => {
-  if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-
-    // Attach event listener only after Office is ready
-    document.getElementById("saveBtn").addEventListener("click", saveVersion);
-  }
 });
 
 async function saveVersion() {
-  const commentInput = document.getElementById("comment");
-  const comment = commentInput ? commentInput.value.trim() : "";
-
-  if (!comment) {
-    alert("Please enter a comment before saving the revision.");
-    return;
-  }
-
   try {
     await Excel.run(async (context) => {
       Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
@@ -36,7 +23,7 @@ async function saveVersion() {
                 } else {
                   file.closeAsync();
                   const blob = new Blob(slices);
-                  saveAsJSON(blob, comment);
+                  saveAsJSON(blob);
                 }
               } else {
                 console.error("Failed to get slice", sliceResult.error.message);
@@ -55,16 +42,16 @@ async function saveVersion() {
   }
 }
 
-function saveAsJSON(blob, comment) {
+function saveAsJSON(blob) {
   const reader = new FileReader();
 
   reader.onload = () => {
     const base64Data = reader.result.split(',')[1];
     const revision = {
       filename: `excel-version-${new Date().toISOString()}.xlsx`,
-      user: Office.context?.userProfile?.displayName || "unknown",
+      user: "unknown",
       timestamp: new Date().toISOString(),
-      comment,
+      comment: "COMMENT",
       fileData: base64Data,
     };
 
