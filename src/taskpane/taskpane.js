@@ -23,7 +23,7 @@ async function saveVersion() {
                 } else {
                   file.closeAsync();
                   const blob = new Blob(slices);
-                  saveAsJSON(blob, comment);
+                  saveAsJSON(blob);
                 }
               } else {
                 console.error("Failed to get slice", sliceResult.error.message);
@@ -42,7 +42,7 @@ async function saveVersion() {
   }
 }
 
-function saveAsJSON(blob, comment) {
+function saveAsJSON(blob) {
   console.log(Office.context, "aaaaa");
   
   const reader = new FileReader();
