@@ -36,15 +36,26 @@ async function saveVersion() {
           const getSlice = () => {
             file.getSliceAsync(sliceIndex, (sliceResult) => {
               if (sliceResult.status === Office.AsyncResultStatus.Succeeded) {
-                slices.push(sliceResult.value.data);
+                slices.push(new Uint8Array(sliceResult.value.data));
                 sliceIndex++;
                 if (sliceIndex < sliceCount) {
                   getSlice();
                 } else {
                   file.closeAsync();
-                  const blob = new Blob(slices, {
+          
+                  // Merge all slices into one ArrayBuffer
+                  const totalLength = slices.reduce((sum, arr) => sum + arr.length, 0);
+                  const mergedArray = new Uint8Array(totalLength);
+                  let offset = 0;
+                  for (const arr of slices) {
+                    mergedArray.set(arr, offset);
+                    offset += arr.length;
+                  }
+          
+                  const blob = new Blob([mergedArray], {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   });
+          
                   saveAsJSON(blob);
                 }
               } else {
