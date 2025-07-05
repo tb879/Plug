@@ -1,11 +1,6 @@
 // Wait for Office.js to be ready
 Office.onReady((info) => {
-  if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-
-    // Attach event listener only after Office is ready
-    document.getElementById("saveBtn").addEventListener("click", saveVersion);
-  }
 });
 
 async function saveVersion() {
@@ -66,7 +61,7 @@ function saveAsJSON(blob, comment) {
       filename: `excel-version-${new Date().toISOString()}.xlsx`,
       user: "unknown",
       timestamp: new Date().toISOString(),
-      comment,
+      comment: "COMMNET",
       fileData: base64Data,
     };
 
