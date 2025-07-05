@@ -1,10 +1,7 @@
 // Wait for Office.js to be ready
 Office.onReady((info) => {
-  if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-    // Optional: Bind to a button
-    document.getElementById("saveJsonBtn")?.addEventListener("click", saveVersionAsJSON);
-  }
+
 });
 
 /**
