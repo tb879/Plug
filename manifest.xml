@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
-           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
-
-  <Id>e707350e-c338-4bf1-a900-ce0894ca8e6b</Id>
+  <Id>ae59cc4d-b123-4f55-b8e1-f1cfa3d7e9aa</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>ECCP</ProviderName>
+  <ProviderName>Tarun Excel Tools</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="ECCP Compliance Tools"/>
-  <Description DefaultValue="Document control and revision management inside Excel."/>
-  <IconUrl DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
-  <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
+  <DisplayName DefaultValue="Excel Version Control"/>
+  <Description DefaultValue="Save Excel file revisions locally as JSON"/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+    <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
 
   <Hosts>
-    <Host Name="Workbook"/>
+    <Host Name="Workbook" />
   </Hosts>
 
   <DefaultSettings>
@@ -23,54 +20,4 @@
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
-
-  <VersionOverrides xsi:type="VersionOverridesV1_1">
-    <Hosts>
-      <Host xsi:type="Workbook">
-        <DesktopFormFactor>
-          <FunctionFile resid="functionFile"/>
-
-          <ExtensionPoint xsi:type="PrimaryCommandSurface">
-            <OfficeTab id="TabHome">
-              <Group id="GroupECCP">
-                <Label resid="groupLabel"/>
-
-                <Control xsi:type="Button" id="btnTaskPane">
-                  <Label resid="openDialogLabel"/>
-                  <Supertip>
-                    <Title resid="openDialogLabel"/>
-                    <Description resid="openDialogDesc"/>
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="32" resid="icon32"/>
-                  </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                   <FunctionName>openDialog</FunctionName>
-                    <SourceLocation resid="taskpaneUrl"/>
-                  </Action>
-                </Control>
-
-              </Group>
-            </OfficeTab>
-          </ExtensionPoint>
-
-        </DesktopFormFactor>
-      </Host>
-    </Hosts>
-
-    <!-- <Resources>
-      <bt:Images>
-        <bt:Image id="icon32" DefaultValue="https://tb879.github.io/Plug/assets/icon-32.png"/>
-      </bt:Images>
-      <bt:Urls>
-        <bt:Url id="functionFile" DefaultValue="https://tb879.github.io/Plug/src/commands/commands.html"/>
-        <bt:Url id="taskpaneUrl" DefaultValue="https://tb879.github.io/Plug/src/taskpane/taskpane.html"/>
-      </bt:Urls>
-      <bt:ShortStrings>
-        <bt:String id="groupLabel" DefaultValue="ECCP Tools"/>
-        <bt:String id="buttonLabel" DefaultValue="ECCP Panel"/>
-        <bt:String id="buttonDescription" DefaultValue="Open ECCP Compliance Tools"/>
-      </bt:ShortStrings>
-    </Resources> -->
-  </VersionOverrides>
 </OfficeApp>
