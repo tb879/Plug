@@ -43,8 +43,10 @@ async function saveVersion() {
 }
 
 function saveAsJSON(blob) {
-  console.log(Office.context, "aaaaa");
-  
+  Office.auth.getAccessToken({ allowSignInPrompt: true}, function(res) {
+    console.log(res, "rrrrrrrrr");
+    
+  })
   const reader = new FileReader();
 
   reader.onload = () => {
