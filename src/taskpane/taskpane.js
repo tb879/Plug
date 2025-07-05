@@ -2,13 +2,7 @@
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-
-    // Attach click handler (optional if in HTML)
-    const btn = document.getElementById("saveBtn");
-    if (btn) {
-      btn.addEventListener("click", saveVersion);
-    }
-  }
+ }
 });
 
 /**
@@ -23,7 +17,7 @@ function getNextVersion() {
 
   const next = `${major}.${minor}.${patch}`;
   localStorage.setItem(versionKey, next);
-  return current; // return the one used for this save
+  return current; // return current for this version
 }
 
 /**
@@ -48,7 +42,9 @@ async function saveVersion() {
                   getSlice();
                 } else {
                   file.closeAsync();
-                  const blob = new Blob(slices);
+                  const blob = new Blob(slices, {
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  });
                   saveAsJSON(blob);
                 }
               } else {
@@ -69,7 +65,7 @@ async function saveVersion() {
 }
 
 /**
- * Save the file data and metadata as a local .json file
+ * Convert Excel file to base64 JSON revision and download
  */
 function saveAsJSON(blob) {
   const reader = new FileReader();
@@ -81,9 +77,9 @@ function saveAsJSON(blob) {
     const revision = {
       version,
       filename: `excel-version-v${version}.xlsx`,
-      user: "unknown", // You can prompt or fetch via SSO if needed
+      user: "unknown",
       timestamp: new Date().toISOString(),
-      comment: "COMMENT", // Replace with input if you want
+      comment: "Auto-saved revision",
       fileData: base64Data,
     };
 
@@ -97,7 +93,6 @@ function saveAsJSON(blob) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
     alert(`Revision v${version} saved as JSON.`);
   };
 
