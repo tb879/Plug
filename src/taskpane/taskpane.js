@@ -4,14 +4,6 @@ Office.onReady((info) => {
 });
 
 async function saveVersion() {
-  const commentInput = document.getElementById("comment");
-  const comment = commentInput ? commentInput.value.trim() : "";
-
-  if (!comment) {
-    alert("Please enter a comment before saving the revision.");
-    return;
-  }
-
   try {
     await Excel.run(async (context) => {
       Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
