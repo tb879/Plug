@@ -1,7 +1,6 @@
 // Wait for Office.js to be ready
 Office.onReady((info) => {
     console.log("Excel Add-in is ready");
-
 });
 
 /**
