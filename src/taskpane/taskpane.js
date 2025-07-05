@@ -1,9 +1,14 @@
 const saveVersion = async () => {
+  const commentInput = document.getElementById("comment");
+  const comment = commentInput ? commentInput.value.trim() : "";
+
+  if (!comment) {
+    alert("Please enter a comment before saving the revision.");
+    return;
+  }
+
   try {
     await Excel.run(async (context) => {
-      const workbook = context.workbook;
-
-      // Get the workbook as a file
       Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           const file = result.value;
@@ -21,7 +26,7 @@ const saveVersion = async () => {
                 } else {
                   file.closeAsync();
                   const blob = new Blob(slices);
-                  saveAsJSON(blob);
+                  saveAsJSON(blob, comment);
                 }
               } else {
                 console.error("Failed to get slice", sliceResult.error.message);
@@ -40,7 +45,7 @@ const saveVersion = async () => {
   }
 };
 
-const saveAsJSON = (blob) => {
+const saveAsJSON = (blob, comment) => {
   const reader = new FileReader();
 
   reader.onload = () => {
@@ -49,7 +54,7 @@ const saveAsJSON = (blob) => {
       filename: `excel-version-${new Date().toISOString()}.xlsx`,
       user: Office.context?.userProfile?.displayName || "unknown",
       timestamp: new Date().toISOString(),
-      comment: prompt("Enter a comment for this revision:") || "",
+      comment,
       fileData: base64Data,
     };
 
