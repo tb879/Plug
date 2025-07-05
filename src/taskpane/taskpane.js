@@ -1,8 +1,34 @@
 // Wait for Office.js to be ready
 Office.onReady((info) => {
+  if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
+
+    // Attach click handler (optional if in HTML)
+    const btn = document.getElementById("saveBtn");
+    if (btn) {
+      btn.addEventListener("click", saveVersion);
+    }
+  }
 });
 
+/**
+ * Get the next revision version like 1.0.0 → 1.0.1
+ */
+function getNextVersion() {
+  const versionKey = "excel-revision-version";
+  let current = localStorage.getItem(versionKey) || "1.0.0";
+
+  let [major, minor, patch] = current.split(".").map(Number);
+  patch += 1;
+
+  const next = `${major}.${minor}.${patch}`;
+  localStorage.setItem(versionKey, next);
+  return current; // return the one used for this save
+}
+
+/**
+ * Save the current Excel document as JSON revision
+ */
 async function saveVersion() {
   try {
     await Excel.run(async (context) => {
@@ -42,20 +68,22 @@ async function saveVersion() {
   }
 }
 
+/**
+ * Save the file data and metadata as a local .json file
+ */
 function saveAsJSON(blob) {
-  Office.auth.getAccessToken({ allowSignInPrompt: true}, function(res) {
-    console.log(res, "rrrrrrrrr");
-    
-  })
   const reader = new FileReader();
 
   reader.onload = () => {
     const base64Data = reader.result.split(',')[1];
+    const version = getNextVersion();
+
     const revision = {
-      filename: `excel-version-${new Date().toISOString()}.xlsx`,
-      user: "unknown",
+      version,
+      filename: `excel-version-v${version}.xlsx`,
+      user: "unknown", // You can prompt or fetch via SSO if needed
       timestamp: new Date().toISOString(),
-      comment: "COMMNET",
+      comment: "COMMENT", // Replace with input if you want
       fileData: base64Data,
     };
 
@@ -64,12 +92,13 @@ function saveAsJSON(blob) {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `excel-revision-${new Date().toISOString()}.json`;
+    a.download = `excel-revision-v${version}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert("Revision saved as JSON.");
+
+    alert(`Revision v${version} saved as JSON.`);
   };
 
   reader.readAsDataURL(blob);
