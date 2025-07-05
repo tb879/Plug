@@ -1,17 +1,24 @@
-Office.onReady(() => {
-  console.log("ECCP Add-in loaded");
+// Wait for Office.js to be ready
+Office.onReady((info) => {
+  if (info.host === Office.HostType.Excel) {
+    console.log("Excel Add-in is ready");
+
+    // Attach event listener only after Office is ready
+    document.getElementById("saveBtn").addEventListener("click", saveVersion);
+  }
 });
 
-function setStatus(msg) {
-  document.getElementById("status").innerText = msg;
-}
+async function saveVersion() {
+  const commentInput = document.getElementById("comment");
+  const comment = commentInput ? commentInput.value.trim() : "";
 
-const saveVersion = async () => {
+  if (!comment) {
+    alert("Please enter a comment before saving the revision.");
+    return;
+  }
+
   try {
     await Excel.run(async (context) => {
-      const workbook = context.workbook;
-
-      // Get the workbook as a file
       Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           const file = result.value;
@@ -29,7 +36,7 @@ const saveVersion = async () => {
                 } else {
                   file.closeAsync();
                   const blob = new Blob(slices);
-                  saveAsJSON(blob);
+                  saveAsJSON(blob, comment);
                 }
               } else {
                 console.error("Failed to get slice", sliceResult.error.message);
@@ -46,18 +53,18 @@ const saveVersion = async () => {
   } catch (err) {
     console.error("Excel run failed", err);
   }
-};
+}
 
-const saveAsJSON = (blob) => {
+function saveAsJSON(blob, comment) {
   const reader = new FileReader();
 
   reader.onload = () => {
-    const base64Data = reader.result.split(',')[1]; // Remove prefix
+    const base64Data = reader.result.split(',')[1];
     const revision = {
       filename: `excel-version-${new Date().toISOString()}.xlsx`,
       user: Office.context?.userProfile?.displayName || "unknown",
       timestamp: new Date().toISOString(),
-      comment: prompt("Enter a comment for this revision:") || "",
+      comment,
       fileData: base64Data,
     };
 
@@ -75,4 +82,4 @@ const saveAsJSON = (blob) => {
   };
 
   reader.readAsDataURL(blob);
-};
+}
