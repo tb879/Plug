@@ -21,7 +21,7 @@ function getNextVersion() {
 /**
  * Save the Excel content (values) as a structured JSON revision
  */
-async function saveVersionAsJSON() {
+async function saveVersion() {
   try {
     await Excel.run(async (context) => {
       const sheet = context.workbook.worksheets.getActiveWorksheet();
