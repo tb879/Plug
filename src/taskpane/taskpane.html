@@ -1,23 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <title>ECCP Taskpane</title>
-  </head>
-  <body>
-    <h2>ECCP Compliance Tools</h2>
-    <button onclick="newDocument()">New Document</button>
-    <button onclick="insertMetadata()">Insert Metadata</button>
-    <button onclick="saveAndCommit()">Save & Commit Revision</button>
-    <button onclick="editMetadata()">Edit Metadata</button>
-    <button onclick="trackChanges()">Track Changes</button>
-    <button onclick="sendForReview()">Send for Review</button>
-    <button onclick="approveDocument()">Approve Document</button>
-    <button onclick="exportPDF()">Export to PDF</button>
-    <button onclick="viewChangeLog()">View Change Log</button>
-    <p id="status"></p>
-
-    <script src="taskpane.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <title>Excel Version Control</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="taskpane.js"></script>
+</head>
+<body>
+  <h2>Excel Version Control</h2>
+  <button onclick="saveVersion()">💾 Save Revision</button>
+</body>
 </html>
