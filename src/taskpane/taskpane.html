@@ -4,13 +4,35 @@
     <meta charset="utf-8" />
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <title>ECCP Taskpane</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h2 {
+        color: #2c3e50;
+      }
+      button {
+        background-color: #0078d4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 10px 5px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #005a9e;
+      }
+    </style>
   </head>
   <body>
-    <h2>Excel Version Control</h2>
-    <!-- <button onclick="saveVersion()">💾 Save Revision</button> -->
+    <h2>Excel Control</h2>
     <button id="saveJsonBtn" onclick="saveVersionAsJSON()">Save Excel Data as JSON</button>
     <button id="downloadXlsxBtn" onclick="downloadExcelFile()">Download Excel File (.xlsx)</button>
-  
+
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <script src="taskpane.js"></script>
   </body>
