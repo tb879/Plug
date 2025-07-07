@@ -35,9 +35,9 @@ async function saveVersionAsJSON() {
       const revision = {
         version,
         filename: `excel-revision-v${version}.json`,
-        user: Office.context?.userProfile?.displayName || "unknown",
+        user: "User1",
         timestamp: new Date().toISOString(),
-        comment: "Auto-saved structured data as JSON",
+        comment: "Auto-saved",
         headers,
         rows: dataAsJson,
       };
