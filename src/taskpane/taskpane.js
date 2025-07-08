@@ -205,8 +205,21 @@ async function loadSelectedVersion() {
     await context.sync();
 
     const json = JSON.parse(versionRow.values[0][3]);
+
+    if (!json || json.length === 0) {
+      const activeSheet = context.workbook.worksheets.getActiveWorksheet();
+      const range = activeSheet.getRange("A1");
+      range.values = [[""]]; // Just an empty cell
+      await context.sync();
+      console.log(`Version ${versionRow.values[0][0]} loaded as blank sheet.`);
+      return;
+    }
+
     const headers = Object.keys(json[0]);
     const allData = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
+    // const json = JSON.parse(versionRow.values[0][3]);
+    // const headers = Object.keys(json[0]);
+    // const allData = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
 
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const range = activeSheet.getRangeByIndexes(0, 0, allData.length, headers.length);
