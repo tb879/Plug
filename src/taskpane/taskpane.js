@@ -1,12 +1,7 @@
-/** taskpane.js - Updated with UI-driven version list rendering */
-
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
-
-    // Load version list on startup
     renderVersionHistory();
   }
 });
@@ -22,16 +17,14 @@ function getNextVersion(existingVersions) {
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getActiveWorksheet();
-    const range = sheet.getUsedRange();
+    const range = sheet.getUsedRangeOrNullObject();
     range.load("values");
     await context.sync();
 
-    const values = range.values;
-    if (values.length === 0 || values[0].length === 0) return console.log("Cannot save empty sheet");
-
-    const headers = values[0];
-    const data = values.slice(1);
-    const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    const values = range.isNullObject ? [] : range.values;
+    const headers = values[0] || [];
+    const data = values.length > 1 ? values.slice(1) : [];
+    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     let versionSheet;
     try {
@@ -48,7 +41,7 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "Jay Yadav"; // Static placeholder
+    const user = "Jay Yadav"; // Static for now
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
@@ -86,16 +79,14 @@ async function renderVersionHistory() {
       }
 
       container.innerHTML = "";
-      [...values].reverse().forEach((row, idx) => {
-        const [version, timestamp, user, _data] = row;
-        const timeLabel = idx === 0 ? "Current Version" : getRelativeTime(timestamp);
-
+      [...values].reverse().forEach((row) => {
+        const [version, timestamp, user] = row;
         const div = document.createElement("div");
         div.className = "version-entry";
         div.onclick = () => loadVersionByVersion(version);
         div.innerHTML = `
           <div class="version-title">${getRelativeTime(timestamp)}</div>
-          <div class="version-sub">${timeLabel}</div>
+          <div class="version-sub">Version: ${version}</div>
           <div class="user-info"><span class="user-bullet"></span>${user}</div>
         `;
         container.appendChild(div);
@@ -114,7 +105,7 @@ async function loadVersionByVersion(versionToLoad) {
     await context.sync();
 
     const values = range.values;
-    const match = values.find(row => row[0] === versionToLoad);
+    const match = values.find((row) => row[0] === versionToLoad);
     if (!match) return console.log("Version not found");
 
     const json = JSON.parse(match[3]);
@@ -132,7 +123,7 @@ async function loadVersionByVersion(versionToLoad) {
     }
 
     const headers = Object.keys(json[0]);
-    const data = [headers, ...json.map(obj => headers.map(h => obj[h]))];
+    const data = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
