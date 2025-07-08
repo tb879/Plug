@@ -166,7 +166,7 @@ async function saveAndCommitVersion() {
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
 
     await context.sync();
-    alert(`Version ${newVersion} committed to hidden sheet.`);
+    console.log(`Version ${newVersion} committed to hidden sheet.`);
     populateVersionDropdown();
   });
 }
@@ -210,6 +210,6 @@ async function loadSelectedVersion() {
     const range = activeSheet.getRangeByIndexes(0, 0, allData.length, headers.length);
     range.values = allData;
     await context.sync();
-    alert(`Version ${versionRow.values[0][0]} loaded into sheet.`);
+    console.log(`Version ${versionRow.values[0][0]} loaded into sheet.`);
   });
 }
