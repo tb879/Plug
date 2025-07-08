@@ -35,15 +35,15 @@
   </head>
   <body>
     <h2>Excel Add-in: Export Options</h2>
-    <button id="saveJsonBtn">Save Excel Data as JSON</button>
-    <button id="downloadXlsxBtn">Download Excel File (.xlsx)</button>
-    <button id="saveCommitBtn">Save & Commit Version</button>
+    <button id="saveJsonBtn" onclick="saveJsonBtn()">Save Excel Data as JSON</button>
+    <button id="downloadXlsxBtn" onclick="downloadXlsxBtn()">Download Excel File (.xlsx)</button>
+    <button id="saveCommitBtn" onclick="saveCommitBtn()">Save & Commit Version</button>
 
     <div style="margin-top: 20px">
       <select id="versionDropdown">
         <option value="">Select Version</option>
       </select>
-      <button id="loadVersionBtn">Load Selected Version</button>
+      <button id="loadVersionBtn" onclick="loadVersionBtn()">Load Selected Version</button>
     </div>
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <script src="taskpane.js"></script>
