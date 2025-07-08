@@ -14,6 +14,8 @@ function getNextVersion(existingVersions) {
   return `${major}.${minor}.${patch}`;
 }
 
+let currentVersion = null;
+
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getActiveWorksheet();
@@ -41,13 +43,14 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "Jay Yadav"; // Static for now
+    const user = "User One";
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
     versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
 
+    currentVersion = newVersion;
     console.log(`Version ${newVersion} saved.`);
     renderVersionHistory();
   });
@@ -78,15 +81,20 @@ async function renderVersionHistory() {
         return;
       }
 
+      if (!currentVersion) {
+        currentVersion = values[values.length - 1][0];
+      }
+
       container.innerHTML = "";
       [...values].reverse().forEach((row) => {
         const [version, timestamp, user] = row;
+        const isCurrent = version === currentVersion;
         const div = document.createElement("div");
         div.className = "version-entry";
         div.onclick = () => loadVersionByVersion(version);
         div.innerHTML = `
           <div class="version-title">${getRelativeTime(timestamp)}</div>
-          <div class="version-sub">Version: ${version}</div>
+          <div class="version-sub">Version: ${version}${isCurrent ? " (current)" : ""}</div>
           <div class="user-info"><span class="user-bullet"></span>${user}</div>
         `;
         container.appendChild(div);
@@ -119,6 +127,8 @@ async function loadVersionByVersion(versionToLoad) {
     if (!json || json.length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
+      currentVersion = versionToLoad;
+      renderVersionHistory();
       return;
     }
 
@@ -127,5 +137,7 @@ async function loadVersionByVersion(versionToLoad) {
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
+    currentVersion = versionToLoad;
+    renderVersionHistory();
   });
 }
