@@ -4,8 +4,6 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
 
-    document.getElementById("saveJsonBtn")?.addEventListener("click", saveVersionAsJSON);
-    document.getElementById("downloadXlsxBtn")?.addEventListener("click", downloadExcelFile);
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("loadVersionBtn")?.addEventListener("click", handleVersionLoad);
 
@@ -30,9 +28,9 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     const values = range.values;
-    const headers = values[0];
-    const data = values.slice(1);
-    const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    const headers = values.length ? values[0] : [];
+    const data = values.length > 1 ? values.slice(1) : [];
+    const jsonData = headers.length ? data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val]))) : [];
 
     let versionSheet;
     const sheets = context.workbook.worksheets;
@@ -57,7 +55,7 @@ async function saveAndCommitVersion() {
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
     await context.sync();
     console.log(`Version ${newVersion} saved.`);
-    await populateVersionDropdown(newVersion); // Pass to pre-select the saved version
+    await populateVersionDropdown(newVersion);
   });
 }
 
