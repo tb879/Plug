@@ -3,7 +3,12 @@
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
-    window.addEventListener("load", populateVersionDropdown);
+    document.getElementById("saveJsonBtn")?.addEventListener("click", saveVersionAsJSON);
+    document.getElementById("downloadXlsxBtn")?.addEventListener("click", downloadExcelFile);
+    document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
+    document.getElementById("loadVersionBtn")?.addEventListener("click", loadSelectedVersion);
+
+    populateVersionDropdown();
   }
 });
 
