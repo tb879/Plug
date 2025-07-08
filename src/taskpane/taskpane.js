@@ -59,64 +59,68 @@ async function saveVersionAsJSON() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      alert(`Data exported as JSON.`);
+      console.log(`Data exported as JSON.`);
     });
   } catch (err) {
-    console.error("Excel run failed", err);
-    alert("Failed to save JSON.");
+    console.log("Excel run failed");
+    console.log("Failed to save JSON.");
   }
 }
 
 async function downloadExcelFile() {
   try {
     await Excel.run(async (context) => {
-      Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, (result) => {
-        if (result.status === Office.AsyncResultStatus.Succeeded) {
-          const file = result.value;
-          const sliceCount = file.sliceCount;
-          const slices = [];
-          let sliceIndex = 0;
+      Office.context.document.getFileAsync(
+        Office.FileType.Compressed,
+        { sliceSize: 65536 },
+        (result) => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            const file = result.value;
+            const sliceCount = file.sliceCount;
+            const slices = [];
+            let sliceIndex = 0;
 
-          const getSlice = () => {
-            file.getSliceAsync(sliceIndex, (sliceResult) => {
-              if (sliceResult.status === Office.AsyncResultStatus.Succeeded) {
-                slices.push(new Uint8Array(sliceResult.value.data));
-                sliceIndex++;
-                if (sliceIndex < sliceCount) {
-                  getSlice();
-                } else {
-                  file.closeAsync();
-                  const totalLength = slices.reduce((sum, arr) => sum + arr.length, 0);
-                  const mergedArray = new Uint8Array(totalLength);
-                  let offset = 0;
-                  for (const arr of slices) {
-                    mergedArray.set(arr, offset);
-                    offset += arr.length;
+            const getSlice = () => {
+              file.getSliceAsync(sliceIndex, (sliceResult) => {
+                if (sliceResult.status === Office.AsyncResultStatus.Succeeded) {
+                  slices.push(new Uint8Array(sliceResult.value.data));
+                  sliceIndex++;
+                  if (sliceIndex < sliceCount) {
+                    getSlice();
+                  } else {
+                    file.closeAsync();
+                    const totalLength = slices.reduce((sum, arr) => sum + arr.length, 0);
+                    const mergedArray = new Uint8Array(totalLength);
+                    let offset = 0;
+                    for (const arr of slices) {
+                      mergedArray.set(arr, offset);
+                      offset += arr.length;
+                    }
+                    const blob = new Blob([mergedArray], {
+                      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    });
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "exported-excel-file.xlsx";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                   }
-                  const blob = new Blob([mergedArray], {
-                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                  });
-
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "exported-excel-file.xlsx";
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
+                } else {
+                  console.error("Failed to get slice:", sliceResult.error.message);
                 }
-              } else {
-                console.error("Failed to get slice:", sliceResult.error.message);
-              }
-            });
-          };
+              });
+            };
 
-          getSlice();
-        } else {
-          console.error("Failed to get file:", result.error.message);
+            getSlice();
+          } else {
+            console.error("Failed to get file:", result.error.message);
+          }
         }
-      });
+      );
     });
   } catch (err) {
     console.error("Excel run failed:", err);
@@ -133,7 +137,7 @@ async function saveAndCommitVersion() {
     const values = range.values;
     const headers = values[0];
     const data = values.slice(1);
-    const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     let versionSheet;
     const sheets = context.workbook.worksheets;
@@ -194,7 +198,10 @@ async function populateVersionDropdown() {
 
 async function loadSelectedVersion() {
   const rowIndex = document.getElementById("versionDropdown").value;
-  if (!rowIndex) return alert("Select a version.");
+  if (!rowIndex) {
+    console.log("Select a version.");
+    return;
+  }
 
   await Excel.run(async (context) => {
     const versionSheet = context.workbook.worksheets.getItem("VersionHistory");
@@ -204,7 +211,7 @@ async function loadSelectedVersion() {
 
     const json = JSON.parse(versionRow.values[0][3]);
     const headers = Object.keys(json[0]);
-    const allData = [headers, ...json.map(obj => headers.map(h => obj[h]))];
+    const allData = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
 
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const range = activeSheet.getRangeByIndexes(0, 0, allData.length, headers.length);
