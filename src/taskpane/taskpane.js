@@ -154,6 +154,7 @@ async function saveAndCommitVersion() {
 }
 
 async function populateVersionDropdown() {
+  console.log("CALLING>>>>>>>>>>>")
   await Excel.run(async (context) => {
     const dropdown = document.getElementById("versionDropdown");
     dropdown.innerHTML = '<option value="">Select Version</option>';
