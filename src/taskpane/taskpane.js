@@ -3,6 +3,7 @@
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
+    window.addEventListener("load", populateVersionDropdown);
   }
 });
 
@@ -14,113 +15,113 @@ function getNextVersion(existingVersions) {
   return `${major}.${minor}.${patch}`;
 }
 
-async function saveVersionAsJSON() {
-  try {
-    await Excel.run(async (context) => {
-      const sheet = context.workbook.worksheets.getActiveWorksheet();
-      const range = sheet.getUsedRange();
-      range.load(["values", "rowCount", "columnCount"]);
-      await context.sync();
+// async function saveVersionAsJSON() {
+//   try {
+//     await Excel.run(async (context) => {
+//       const sheet = context.workbook.worksheets.getActiveWorksheet();
+//       const range = sheet.getUsedRange();
+//       range.load(["values", "rowCount", "columnCount"]);
+//       await context.sync();
 
-      const values = range.values;
-      const headers = values[0];
-      const rows = values.slice(1);
+//       const values = range.values;
+//       const headers = values[0];
+//       const rows = values.slice(1);
 
-      const dataAsJson = rows.map((row) =>
-        Object.fromEntries(row.map((cell, i) => [headers[i], cell]))
-      );
+//       const dataAsJson = rows.map((row) =>
+//         Object.fromEntries(row.map((cell, i) => [headers[i], cell]))
+//       );
 
-      const version = "manual-save";
-      const revision = {
-        version,
-        filename: `excel-version-${Date.now()}.json`,
-        user: Office.context?.userProfile?.displayName || "unknown",
-        timestamp: new Date().toISOString(),
-        comment: "Manual JSON Export",
-        headers,
-        rows: dataAsJson,
-      };
+//       const version = "manual-save";
+//       const revision = {
+//         version,
+//         filename: `excel-version-${Date.now()}.json`,
+//         user: Office.context?.userProfile?.displayName || "unknown",
+//         timestamp: new Date().toISOString(),
+//         comment: "Manual JSON Export",
+//         headers,
+//         rows: dataAsJson,
+//       };
 
-      const jsonBlob = new Blob([JSON.stringify(revision, null, 2)], {
-        type: "application/json",
-      });
+//       const jsonBlob = new Blob([JSON.stringify(revision, null, 2)], {
+//         type: "application/json",
+//       });
 
-      const url = URL.createObjectURL(jsonBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = revision.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+//       const url = URL.createObjectURL(jsonBlob);
+//       const a = document.createElement("a");
+//       a.href = url;
+//       a.download = revision.filename;
+//       document.body.appendChild(a);
+//       a.click();
+//       document.body.removeChild(a);
+//       URL.revokeObjectURL(url);
 
-      console.log(`Data exported as JSON.`);
-    });
-  } catch (err) {
-    console.log("Excel run failed");
-    console.log("Failed to save JSON.");
-  }
-}
+//       console.log(`Data exported as JSON.`);
+//     });
+//   } catch (err) {
+//     console.log("Excel run failed");
+//     console.log("Failed to save JSON.");
+//   }
+// }
 
-async function downloadExcelFile() {
-  try {
-    await Excel.run(async (context) => {
-      Office.context.document.getFileAsync(
-        Office.FileType.Compressed,
-        { sliceSize: 65536 },
-        (result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            const file = result.value;
-            const sliceCount = file.sliceCount;
-            const slices = [];
-            let sliceIndex = 0;
+// async function downloadExcelFile() {
+//   try {
+//     await Excel.run(async (context) => {
+//       Office.context.document.getFileAsync(
+//         Office.FileType.Compressed,
+//         { sliceSize: 65536 },
+//         (result) => {
+//           if (result.status === Office.AsyncResultStatus.Succeeded) {
+//             const file = result.value;
+//             const sliceCount = file.sliceCount;
+//             const slices = [];
+//             let sliceIndex = 0;
 
-            const getSlice = () => {
-              file.getSliceAsync(sliceIndex, (sliceResult) => {
-                if (sliceResult.status === Office.AsyncResultStatus.Succeeded) {
-                  slices.push(new Uint8Array(sliceResult.value.data));
-                  sliceIndex++;
-                  if (sliceIndex < sliceCount) {
-                    getSlice();
-                  } else {
-                    file.closeAsync();
-                    const totalLength = slices.reduce((sum, arr) => sum + arr.length, 0);
-                    const mergedArray = new Uint8Array(totalLength);
-                    let offset = 0;
-                    for (const arr of slices) {
-                      mergedArray.set(arr, offset);
-                      offset += arr.length;
-                    }
-                    const blob = new Blob([mergedArray], {
-                      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    });
+//             const getSlice = () => {
+//               file.getSliceAsync(sliceIndex, (sliceResult) => {
+//                 if (sliceResult.status === Office.AsyncResultStatus.Succeeded) {
+//                   slices.push(new Uint8Array(sliceResult.value.data));
+//                   sliceIndex++;
+//                   if (sliceIndex < sliceCount) {
+//                     getSlice();
+//                   } else {
+//                     file.closeAsync();
+//                     const totalLength = slices.reduce((sum, arr) => sum + arr.length, 0);
+//                     const mergedArray = new Uint8Array(totalLength);
+//                     let offset = 0;
+//                     for (const arr of slices) {
+//                       mergedArray.set(arr, offset);
+//                       offset += arr.length;
+//                     }
+//                     const blob = new Blob([mergedArray], {
+//                       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+//                     });
 
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "exported-excel-file.xlsx";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }
-                } else {
-                  console.error("Failed to get slice:", sliceResult.error.message);
-                }
-              });
-            };
+//                     const url = URL.createObjectURL(blob);
+//                     const a = document.createElement("a");
+//                     a.href = url;
+//                     a.download = "exported-excel-file.xlsx";
+//                     document.body.appendChild(a);
+//                     a.click();
+//                     document.body.removeChild(a);
+//                     URL.revokeObjectURL(url);
+//                   }
+//                 } else {
+//                   console.error("Failed to get slice:", sliceResult.error.message);
+//                 }
+//               });
+//             };
 
-            getSlice();
-          } else {
-            console.error("Failed to get file:", result.error.message);
-          }
-        }
-      );
-    });
-  } catch (err) {
-    console.error("Excel run failed:", err);
-  }
-}
+//             getSlice();
+//           } else {
+//             console.error("Failed to get file:", result.error.message);
+//           }
+//         }
+//       );
+//     });
+//   } catch (err) {
+//     console.error("Excel run failed:", err);
+//   }
+// }
 
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
