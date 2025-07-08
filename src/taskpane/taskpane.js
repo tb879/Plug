@@ -209,8 +209,8 @@ async function loadSelectedVersion() {
 
     if (!json || json.length === 0) {
       const activeSheet = context.workbook.worksheets.getActiveWorksheet();
-      const range = activeSheet.getRange("A1");
-      range.values = [[""]]; // Just an empty cell
+      const usedRange = activeSheet.getUsedRange();
+      usedRange.clear();
       await context.sync();
       console.log(`Version ${versionRow.values[0][0]} loaded as blank sheet.`);
       return;
