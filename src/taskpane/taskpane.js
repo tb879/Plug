@@ -1,42 +1,22 @@
-/** taskpane.js - Uses CustomProperties for version storage (Web + Desktop compatible) */
+/** taskpane.js - Updated with UI-driven version list rendering */
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
 
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
-    document.getElementById("loadVersionBtn")?.addEventListener("click", handleVersionLoad);
 
-    populateVersionDropdown();
+    // Load version list on startup
+    renderVersionHistory();
   }
 });
 
-function getNextVersion(versions) {
-  if (!versions.length) return "1.0.0";
-  const last = versions[versions.length - 1].version;
-  let [major, minor, patch] = last.split(".").map(Number);
+function getNextVersion(existingVersions) {
+  if (!existingVersions.length) return "1.0.0";
+  const lastVersion = existingVersions[existingVersions.length - 1][0];
+  let [major, minor, patch] = lastVersion.split(".").map(Number);
   patch++;
   return `${major}.${minor}.${patch}`;
-}
-
-async function getStoredVersions() {
-  await Excel.run(async (context) => {
-    const props = context.workbook.properties.custom;
-    props.load("items");
-    await context.sync();
-
-    const item = props.items.find(p => p.key === "ECCP_VERSIONS");
-    window._versionData = item ? JSON.parse(item.value) : [];
-  });
-  return window._versionData || [];
-}
-
-async function saveVersionData(versions) {
-  await Excel.run(async (context) => {
-    const props = context.workbook.properties.custom;
-    props.add("ECCP_VERSIONS", JSON.stringify(versions));
-    await context.sync();
-  });
 }
 
 async function saveAndCommitVersion() {
@@ -47,78 +27,114 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     const values = range.values;
-    const headers = values.length ? values[0] : [];
-    const data = values.length > 1 ? values.slice(1) : [];
-    const jsonData = headers.length ? data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val]))) : [];
+    if (values.length === 0 || values[0].length === 0) return console.log("Cannot save empty sheet");
 
-    const versions = await getStoredVersions();
-    const newVersion = getNextVersion(versions);
+    const headers = values[0];
+    const data = values.slice(1);
+    const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
-    const newEntry = {
-      version: newVersion,
-      timestamp: new Date().toISOString(),
-      user: Office.context?.userProfile?.displayName || "unknown",
-      data: jsonData,
-    };
+    let versionSheet;
+    try {
+      versionSheet = context.workbook.worksheets.getItem("VersionHistory");
+    } catch {
+      versionSheet = context.workbook.worksheets.add("VersionHistory");
+      versionSheet.visibility = Excel.SheetVisibility.hidden;
+    }
 
-    const updatedVersions = [...versions, newEntry];
-    await saveVersionData(updatedVersions);
-    console.log(`Version ${newVersion} saved.`);
-    await populateVersionDropdown(newVersion);
-  });
-}
-
-async function populateVersionDropdown(selectVersion = null) {
-  const dropdown = document.getElementById("versionDropdown");
-  dropdown.innerHTML = '<option value="">Select Version</option>';
-
-  const versions = await getStoredVersions();
-
-  versions.forEach((v, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = `${v.version} (${v.timestamp.split("T")[0]})`;
-    if (v.version === selectVersion) opt.selected = true;
-    dropdown.appendChild(opt);
-  });
-}
-
-function handleVersionLoad() {
-  const dropdown = document.getElementById("versionDropdown");
-  const idx = dropdown.value;
-  if (idx === "") {
-    console.log("Please select a version.");
-    return;
-  }
-  loadSelectedVersion(parseInt(idx));
-}
-
-async function loadSelectedVersion(index) {
-  const versions = await getStoredVersions();
-  const version = versions[index];
-  if (!version) return;
-
-  await Excel.run(async (context) => {
-    const activeSheet = context.workbook.worksheets.getActiveWorksheet();
-    const usedRange = activeSheet.getUsedRangeOrNullObject();
-    usedRange.load("address");
+    const used = versionSheet.getUsedRangeOrNullObject();
+    used.load("values, rowCount");
     await context.sync();
 
-    if (!usedRange.isNullObject) usedRange.clear();
+    const existing = used.isNullObject ? [] : used.values.slice(1);
+    const newVersion = getNextVersion(existing);
+    const timestamp = new Date().toISOString();
+    const user = "Jay Yadav"; // Static placeholder
 
-    const json = version.data;
+    const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
+    versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
+    versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
+    await context.sync();
+
+    console.log(`Version ${newVersion} saved.`);
+    renderVersionHistory();
+  });
+}
+
+function getRelativeTime(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime();
+  if (diff < 60000) return "Just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} minutes ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+  return new Date(isoString).toLocaleString();
+}
+
+async function renderVersionHistory() {
+  await Excel.run(async (context) => {
+    const container = document.getElementById("versionList");
+    container.innerHTML = "Loading...";
+
+    try {
+      const sheet = context.workbook.worksheets.getItem("VersionHistory");
+      const range = sheet.getUsedRange();
+      range.load("values");
+      await context.sync();
+
+      const values = range.values.slice(1);
+      if (values.length === 0) {
+        container.innerHTML = "No versions found.";
+        return;
+      }
+
+      container.innerHTML = "";
+      [...values].reverse().forEach((row, idx) => {
+        const [version, timestamp, user, _data] = row;
+        const timeLabel = idx === 0 ? "Current Version" : getRelativeTime(timestamp);
+
+        const div = document.createElement("div");
+        div.className = "version-entry";
+        div.onclick = () => loadVersionByVersion(version);
+        div.innerHTML = `
+          <div class="version-title">${getRelativeTime(timestamp)}</div>
+          <div class="version-sub">${timeLabel}</div>
+          <div class="user-info"><span class="user-bullet"></span>${user}</div>
+        `;
+        container.appendChild(div);
+      });
+    } catch (e) {
+      container.innerHTML = "No version history found.";
+    }
+  });
+}
+
+async function loadVersionByVersion(versionToLoad) {
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getItem("VersionHistory");
+    const range = sheet.getUsedRange();
+    range.load("values");
+    await context.sync();
+
+    const values = range.values;
+    const match = values.find(row => row[0] === versionToLoad);
+    if (!match) return console.log("Version not found");
+
+    const json = JSON.parse(match[3]);
+    const activeSheet = context.workbook.worksheets.getActiveWorksheet();
+    const used = activeSheet.getUsedRangeOrNullObject();
+    used.load("address");
+    await context.sync();
+
+    if (!used.isNullObject) used.clear();
+
     if (!json || json.length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
-      console.log("Blank version loaded.");
       return;
     }
 
     const headers = Object.keys(json[0]);
-    const rows = [headers, ...json.map(obj => headers.map(h => obj[h]))];
-    const writeRange = activeSheet.getRangeByIndexes(0, 0, rows.length, headers.length);
-    writeRange.values = rows;
+    const data = [headers, ...json.map(obj => headers.map(h => obj[h]))];
+    const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
+    rangeToWrite.values = data;
     await context.sync();
-    console.log(`Version ${version.version} loaded.`);
   });
 }
