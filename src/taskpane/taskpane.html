@@ -26,13 +26,25 @@
       button:hover {
         background-color: #005a9e;
       }
+      select {
+        padding: 10px;
+        font-size: 16px;
+        margin: 10px 5px;
+      }
     </style>
   </head>
   <body>
-    <h2>Excel Control</h2>
-    <button id="saveJsonBtn" onclick="saveVersionAsJSON()">Save Excel Data as JSON</button>
-    <button id="downloadXlsxBtn" onclick="downloadExcelFile()">Download Excel File (.xlsx)</button>
+    <h2>Excel Add-in: Export Options</h2>
+    <button id="saveJsonBtn">Save Excel Data as JSON</button>
+    <button id="downloadXlsxBtn">Download Excel File (.xlsx)</button>
+    <button id="saveCommitBtn">Save & Commit Version</button>
 
+    <div style="margin-top: 20px">
+      <select id="versionDropdown">
+        <option value="">Select Version</option>
+      </select>
+      <button id="loadVersionBtn">Load Selected Version</button>
+    </div>
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <script src="taskpane.js"></script>
   </body>
