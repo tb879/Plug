@@ -22,22 +22,24 @@ async function saveAndCommitVersion() {
     sheets.load("items/name, items/visibility");
     await context.sync();
 
-    if (sheets.items.length === 0) {
-      const sheet = sheets.add("InitialSheet");
-      sheet.activate();
+    let activeSheet;
+    try {
+      activeSheet = context.workbook.worksheets.getActiveWorksheet();
+      activeSheet.load("name, visibility");
       await context.sync();
-    } else {
-      const visibleSheets = sheets.items.filter(s => s.visibility === "Visible");
-      if (visibleSheets.length === 0) {
-        const fallback = sheets.items[0];
-        fallback.visibility = Excel.SheetVisibility.visible;
-        fallback.activate();
-        await context.sync();
+      if (activeSheet.visibility !== Excel.SheetVisibility.visible) {
+        console.log("Active sheet is not visible.");
+        throw new Error("Active sheet is not visible.");
       }
+    } catch (err) {
+      console.log("Active sheet is not visible.");
+      const fallback = context.workbook.worksheets.add("Sheet1");
+      fallback.activate();
+      await context.sync();
+      activeSheet = fallback;
     }
 
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
-    const rangeObj = sheet.getUsedRangeOrNullObject();
+    const rangeObj = activeSheet.getUsedRangeOrNullObject();
     rangeObj.load("values");
     await context.sync();
 
