@@ -28,13 +28,15 @@ async function saveAndCommitVersion() {
     const data = values.length > 1 ? values.slice(1) : [];
     const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
-    let versionSheet;
-    try {
-      versionSheet = context.workbook.worksheets.getItem("VersionHistory");
-    } catch {
+    let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
+    await context.sync();
+    
+    if (versionSheet.isNullObject) {
       versionSheet = context.workbook.worksheets.add("VersionHistory");
       versionSheet.visibility = Excel.SheetVisibility.hidden;
+      await context.sync();
     }
+    
 
     const used = versionSheet.getUsedRangeOrNullObject();
     used.load("values, rowCount");
@@ -70,8 +72,16 @@ async function renderVersionHistory() {
     container.innerHTML = "Loading...";
 
     try {
-      const sheet = context.workbook.worksheets.getItem("VersionHistory");
+      const sheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
+      await context.sync();
+      
+      if (sheet.isNullObject) {
+        container.innerHTML = "No version history found.";
+        return;
+      }
+      
       const range = sheet.getUsedRange();
+      
       range.load("values");
       await context.sync();
 
