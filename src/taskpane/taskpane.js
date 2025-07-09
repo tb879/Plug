@@ -19,23 +19,23 @@ let currentVersion = null;
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
     const sheets = context.workbook.worksheets;
-    sheets.load("items/name");
+    sheets.load("items");
     await context.sync();
-
+    
     if (sheets.items.length === 0) {
-      const sheet = sheets.add("InitialSheet");
+      const sheet = sheets.add("Sheet1");
       sheet.activate();
       await context.sync();
-      currentVersion = "1.0.0";
-      console.log("Initialized workbook with version 1.0.0 (blank)");
-      renderVersionHistory();
-      return;
+    } else {
+      // ensure one sheet is visible and active
+      const visibleSheets = sheets.items.filter(s => s.visibility === "Visible");
+      if (visibleSheets.length === 0) {
+        const fallback = sheets.items[0];
+        fallback.visibility = Excel.SheetVisibility.visible;
+        fallback.activate();
+        await context.sync();
+      }
     }
-
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
-    const range = sheet.getUsedRangeOrNullObject();
-    range.load("values");
-    await context.sync();
 
     const values = range.isNullObject ? [] : range.values;
     const headers = values[0] || [];
