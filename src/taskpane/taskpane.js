@@ -108,7 +108,7 @@ async function renderVersionHistory() {
         container.appendChild(div);
       });
     } catch (e) {
-      container.innerHTML = "No version history found.";
+      container.innerHTML = "No version history found!";
     }
   });
 }
