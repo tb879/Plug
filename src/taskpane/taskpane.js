@@ -22,13 +22,15 @@ async function saveAndCommitVersion() {
     sheets.load("items/name");
     await context.sync();
 
-    // If there are no visible sheets, add one
     if (sheets.items.length === 0) {
       sheets.add("Sheet1");
       await context.sync();
     }
 
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
+    let sheet = context.workbook.worksheets.getActiveWorksheet();
+    sheet.load("name");
+    await context.sync();
+
     const range = sheet.getUsedRangeOrNullObject();
     range.load("values");
     await context.sync();
@@ -54,7 +56,7 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "User One";
+    const user = "Jay Yadav"; // Static for now
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
@@ -111,7 +113,7 @@ async function renderVersionHistory() {
         container.appendChild(div);
       });
     } catch (e) {
-      container.innerHTML = "No version history found!";
+      container.innerHTML = "No version history found.";
     }
   });
 }
@@ -124,18 +126,19 @@ async function loadVersionByVersion(versionToLoad) {
     await context.sync();
 
     const values = range.values;
-    const match = values.find((row) => row[0] === versionToLoad);
+    const match = values.find(row => row[0] === versionToLoad);
     if (!match) return console.log("Version not found");
 
     const json = JSON.parse(match[3]);
-    // const activeSheet = context.workbook.worksheets.getActiveWorksheet();
-    let activeSheet;
-    try {
-      activeSheet = context.workbook.worksheets.getActiveWorksheet();
-    } catch {
-      activeSheet = context.workbook.worksheets.add("Sheet1");
-      await context.sync();
-    }
+
+    const sheets = context.workbook.worksheets;
+    sheets.load("items/name");
+    await context.sync();
+
+    let activeSheet = context.workbook.worksheets.getActiveWorksheet();
+    activeSheet.load("name");
+    await context.sync();
+
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
     await context.sync();
@@ -151,7 +154,7 @@ async function loadVersionByVersion(versionToLoad) {
     }
 
     const headers = Object.keys(json[0]);
-    const data = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
+    const data = [headers, ...json.map(obj => headers.map(h => obj[h]))];
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
