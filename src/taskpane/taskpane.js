@@ -170,7 +170,6 @@ async function writeMetadataSheet(context, version, user) {
   const today = new Date().toISOString().split("T")[0];
   const docId = `DOC-${today.replace(/-/g, "")}-001`;
   const data = [
-    ["Field", "Value"],
     ["Document Title", "Supplier Audit Checklist"],
     ["Document ID", docId],
     ["Revision Number", version],
@@ -187,6 +186,8 @@ async function writeMetadataSheet(context, version, user) {
 }
 
 async function showMetadataSheet() {
+  console.log("CALLING>>>>>>>");
+  
   await Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
     sheet.load("isNullObject");
