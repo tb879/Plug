@@ -69,8 +69,7 @@ async function saveAndCommitVersion() {
     versionSheet.getRange(`A${existing.length + 2}:E${existing.length + 2}`).values = [newRow];
 
     await context.sync();
-
-    // await writeMetadataSheet(context, newVersion, user);
+    await writeMetadataSheet(context, newVersion, user);
 
     currentVersion = newVersion;
     console.log(`Version ${newVersion} saved.`);
@@ -147,7 +146,6 @@ async function loadVersionByVersion(versionToLoad) {
     if (!match) return console.log("Version not found");
 
     const json = JSON.parse(match[3]);
-    const metadata = JSON.parse(match[4]);
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
@@ -168,87 +166,57 @@ async function loadVersionByVersion(versionToLoad) {
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
-    // currentVersion = versionToLoad;
-    // renderVersionHistory();
-    let metaSheet = context.workbook.worksheets.getItemOrNullObject("MetadataPreview");
-
-    await context.sync();
-
-    if (!metaSheet.isNullObject) {
-      metaSheet.delete();
-      await context.sync();
-    }
-
-    metaSheet = context.workbook.worksheets.add("MetadataPreview");
-    metaSheet.visibility = Excel.SheetVisibility.visible;
-
-    const metadataValues = [
-      ["Field", "Value"],
-      ["Document Title", metadata.title],
-      ["Document ID", metadata.docId],
-      ["Revision Number", metadata.revision],
-      ["Date of Issue", metadata.date],
-      ["Owner/Author", metadata.owner],
-      ["Approver(s)", metadata.approvers],
-      ["Department/Team", metadata.team],
-      ["Standard", metadata.standard],
-    ];
-
-    const writeMeta = metaSheet.getRange(`A1:B${metadataValues.length}`);
-    writeMeta.values = metadataValues;
-    metaSheet.activate();
-    await context.sync();
     currentVersion = versionToLoad;
     renderVersionHistory();
   });
 }
 
-// async function writeMetadataSheet(context, version, user) {
-//   const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
-//   metadataSheet.load("isNullObject");
-//   await context.sync();
+async function writeMetadataSheet(context, version, user) {
+  const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+  metadataSheet.load("isNullObject");
+  await context.sync();
 
-//   let sheet;
-//   if (metadataSheet.isNullObject) {
-//     sheet = context.workbook.worksheets.add("Metadata");
-//     sheet.visibility = Excel.SheetVisibility.hidden;
-//   } else {
-//     sheet = metadataSheet;
-//   }
+  let sheet;
+  if (metadataSheet.isNullObject) {
+    sheet = context.workbook.worksheets.add("Metadata");
+    sheet.visibility = Excel.SheetVisibility.hidden;
+  } else {
+    sheet = metadataSheet;
+  }
 
-//   const today = new Date().toISOString().split("T")[0];
-//   const docId = `DOC-${today.replace(/-/g, "")}-001`;
-//   const data = [
-//     ["Document Title", "Supplier Audit Checklist"],
-//     ["Document ID", docId],
-//     ["Revision Number", version],
-//     ["Date of Issue", today],
-//     ["Owner/Author", user],
-//     ["Approver(s)", "John Smith"],
-//     ["Department/Team", "Quality"],
-//     ["Standard", "ISO 9001"],
-//   ];
+  const today = new Date().toISOString().split("T")[0];
+  const docId = `DOC-${today.replace(/-/g, "")}-001`;
+  const data = [
+    ["Document Title", "Supplier Audit Checklist"],
+    ["Document ID", docId],
+    ["Revision Number", version],
+    ["Date of Issue", today],
+    ["Owner/Author", user],
+    ["Approver(s)", "John Smith"],
+    ["Department/Team", "Quality"],
+    ["Standard", "ISO 9001"],
+  ];
 
-//   const range = sheet.getRange(`A1:B${data.length}`);
-//   range.values = data;
-//   await context.sync();
-// }
+  const range = sheet.getRange(`A1:B${data.length}`);
+  range.values = data;
+  await context.sync();
+}
 
-// async function showMetadataSheet() {
-//   console.log("CALLING>>>>>>>");
+async function showMetadataSheet() {
+  console.log("CALLING>>>>>>>");
 
-//   await Excel.run(async (context) => {
-//     const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
-//     sheet.load("isNullObject");
-//     await context.sync();
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+    sheet.load("isNullObject");
+    await context.sync();
 
-//     if (sheet.isNullObject) {
-//       console.log("No metadata sheet found.");
-//       return;
-//     }
+    if (sheet.isNullObject) {
+      console.log("No metadata sheet found.");
+      return;
+    }
 
-//     sheet.visibility = Excel.SheetVisibility.visible;
-//     sheet.activate();
-//     await context.sync();
-//   });
-// }
+    sheet.visibility = Excel.SheetVisibility.visible;
+    sheet.activate();
+    await context.sync();
+  });
+}
