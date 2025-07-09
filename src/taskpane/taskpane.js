@@ -18,14 +18,17 @@ let currentVersion = null;
 
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
-    // const sheet = context.workbook.worksheets.getActiveWorksheet();
-    let sheet;
-    try {
-      sheet = context.workbook.worksheets.getActiveWorksheet();
-    } catch (e) {
-      sheet = context.workbook.worksheets.add("Sheet1");
+    const sheets = context.workbook.worksheets;
+    sheets.load("items/name");
+    await context.sync();
+
+    // If there are no visible sheets, add one
+    if (sheets.items.length === 0) {
+      sheets.add("Sheet1");
       await context.sync();
     }
+
+    const sheet = context.workbook.worksheets.getActiveWorksheet();
     const range = sheet.getUsedRangeOrNullObject();
     range.load("values");
     await context.sync();
@@ -33,7 +36,7 @@ async function saveAndCommitVersion() {
     const values = range.isNullObject ? [] : range.values;
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
-    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     let versionSheet;
     try {
@@ -51,7 +54,7 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "User One";
+    const user = "Jay Yadav"; // Static for now
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
@@ -108,7 +111,7 @@ async function renderVersionHistory() {
         container.appendChild(div);
       });
     } catch (e) {
-      container.innerHTML = "No version history found!!";
+      container.innerHTML = "No version history found!";
     }
   });
 }
