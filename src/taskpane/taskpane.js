@@ -18,7 +18,14 @@ let currentVersion = null;
 
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
+    // const sheet = context.workbook.worksheets.getActiveWorksheet();
+    let sheet;
+    try {
+      sheet = context.workbook.worksheets.getActiveWorksheet();
+    } catch (e) {
+      sheet = context.workbook.worksheets.add("Sheet1");
+      await context.sync();
+    }
     const range = sheet.getUsedRangeOrNullObject();
     range.load("values");
     await context.sync();
@@ -34,6 +41,7 @@ async function saveAndCommitVersion() {
     } catch {
       versionSheet = context.workbook.worksheets.add("VersionHistory");
       versionSheet.visibility = Excel.SheetVisibility.hidden;
+      await context.sync();
     }
 
     const used = versionSheet.getUsedRangeOrNullObject();
@@ -117,7 +125,14 @@ async function loadVersionByVersion(versionToLoad) {
     if (!match) return console.log("Version not found");
 
     const json = JSON.parse(match[3]);
-    const activeSheet = context.workbook.worksheets.getActiveWorksheet();
+    // const activeSheet = context.workbook.worksheets.getActiveWorksheet();
+    let activeSheet;
+    try {
+      activeSheet = context.workbook.worksheets.getActiveWorksheet();
+    } catch {
+      activeSheet = context.workbook.worksheets.add("Sheet1");
+      await context.sync();
+    }
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
     await context.sync();
