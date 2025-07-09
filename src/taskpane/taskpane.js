@@ -47,25 +47,8 @@ async function saveAndCommitVersion() {
     const timestamp = new Date().toISOString();
     const user = "User One";
 
-    const metadata = {
-      "Document Title": "Supplier Audit Checklist",
-      "Document ID": `DOC-${timestamp.slice(0, 10).replace(/-/g, "")}-001`,
-      "Revision Number": newVersion,
-      "Date of Issue": timestamp.slice(0, 10),
-      "Owner/Author": user,
-      "Approver(s)": "John Smith",
-      "Department/Team": "Quality",
-      Standard: "ISO 9001",
-    };
-    const newRow = [
-      newVersion,
-      timestamp,
-      user,
-      JSON.stringify(jsonData),
-      JSON.stringify(metadata),
-    ];
-
-    versionSheet.getRange("A1:E1").values = [["Version", "Timestamp", "User", "Data", "Metadata"]];
+    const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
+    versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
     versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
 
@@ -203,35 +186,20 @@ async function writeMetadataSheet(context, version, user) {
 }
 
 async function showMetadataSheet() {
+  console.log("CALLING>>>>>>>");
+  
   await Excel.run(async (context) => {
-    const versionSheet = context.workbook.worksheets.getItem("VersionHistory");
-    const usedRange = versionSheet.getUsedRange();
-    usedRange.load("values");
+    const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+    sheet.load("isNullObject");
     await context.sync();
 
-    const values = usedRange.values;
-    const match = values.find((row) => row[0] === currentVersion);
-    if (!match) {
-      console.log("Metadata not found for current version.");
+    if (sheet.isNullObject) {
+      console.log("No metadata sheet found.");
       return;
     }
 
-    const metadata = JSON.parse(match[4] || "{}");
-
-    let metaSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
-    await context.sync();
-
-    if (metaSheet.isNullObject) {
-      metaSheet = context.workbook.worksheets.add("Metadata");
-    }
-
-    metaSheet.visibility = Excel.SheetVisibility.visible;
-
-    const data = [["Field", "Value"], ...Object.entries(metadata)];
-    const range = metaSheet.getRange(`A1:B${data.length}`);
-    range.values = data;
-
-    metaSheet.activate();
+    sheet.visibility = Excel.SheetVisibility.visible;
+    sheet.activate();
     await context.sync();
   });
 }
