@@ -2,6 +2,7 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
+    document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     renderVersionHistory();
   }
 });
@@ -30,13 +31,12 @@ async function saveAndCommitVersion() {
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
     await context.sync();
-    
+
     if (versionSheet.isNullObject) {
       versionSheet = context.workbook.worksheets.add("VersionHistory");
       versionSheet.visibility = Excel.SheetVisibility.hidden;
       await context.sync();
     }
-    
 
     const used = versionSheet.getUsedRangeOrNullObject();
     used.load("values, rowCount");
@@ -51,6 +51,8 @@ async function saveAndCommitVersion() {
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
     versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
+
+    await writeMetadataSheet(context, newVersion, user);
 
     currentVersion = newVersion;
     console.log(`Version ${newVersion} saved.`);
@@ -74,14 +76,14 @@ async function renderVersionHistory() {
     try {
       const sheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
       await context.sync();
-      
+
       if (sheet.isNullObject) {
         container.innerHTML = "No version history found.";
         return;
       }
-      
+
       const range = sheet.getUsedRange();
-      
+
       range.load("values");
       await context.sync();
 
@@ -149,5 +151,54 @@ async function loadVersionByVersion(versionToLoad) {
     await context.sync();
     currentVersion = versionToLoad;
     renderVersionHistory();
+  });
+}
+
+async function writeMetadataSheet(context, version, user) {
+  const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+  metadataSheet.load("isNullObject");
+  await context.sync();
+
+  let sheet;
+  if (metadataSheet.isNullObject) {
+    sheet = context.workbook.worksheets.add("Metadata");
+    sheet.visibility = Excel.SheetVisibility.hidden;
+  } else {
+    sheet = metadataSheet;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  const docId = `DOC-${today.replace(/-/g, "")}-001`;
+  const data = [
+    ["Field", "Value"],
+    ["Document Title", "Supplier Audit Checklist"],
+    ["Document ID", docId],
+    ["Revision Number", version],
+    ["Date of Issue", today],
+    ["Owner/Author", user],
+    ["Approver(s)", "John Smith"],
+    ["Department/Team", "Quality"],
+    ["Standard", "ISO 9001"],
+  ];
+
+  const range = sheet.getRange(`A1:B${data.length}`);
+  range.values = data;
+  await context.sync();
+}
+
+async function showMetadataSheet() {
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+    sheet.load("isNullObject");
+    await context.sync();
+
+    if (sheet.isNullObject) {
+      console.log("No metadata sheet found.");
+      return;
+    }
+
+    sheet.visibility = Excel.SheetVisibility.visible;
+    sheet.activate();
+    await context.sync();
   });
 }
