@@ -23,14 +23,16 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     if (sheets.items.length === 0) {
-      sheets.add("Sheet1");
+      const sheet = sheets.add("InitialSheet");
+      sheet.activate();
       await context.sync();
+      currentVersion = "1.0.0";
+      console.log("Initialized workbook with version 1.0.0 (blank)");
+      renderVersionHistory();
+      return;
     }
 
-    let sheet = context.workbook.worksheets.getActiveWorksheet();
-    sheet.load("name");
-    await context.sync();
-
+    const sheet = context.workbook.worksheets.getActiveWorksheet();
     const range = sheet.getUsedRangeOrNullObject();
     range.load("values");
     await context.sync();
@@ -56,7 +58,7 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "Jay Yadav"; // Static for now
+    const user = "Jay Yadav";
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
@@ -135,10 +137,7 @@ async function loadVersionByVersion(versionToLoad) {
     sheets.load("items/name");
     await context.sync();
 
-    let activeSheet = context.workbook.worksheets.getActiveWorksheet();
-    activeSheet.load("name");
-    await context.sync();
-
+    const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
     await context.sync();
