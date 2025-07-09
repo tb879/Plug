@@ -54,7 +54,7 @@ async function saveAndCommitVersion() {
     const existing = used.isNullObject ? [] : used.values.slice(1);
     const newVersion = getNextVersion(existing);
     const timestamp = new Date().toISOString();
-    const user = "Jay Yadav"; // Static for now
+    const user = "User One";
 
     const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
