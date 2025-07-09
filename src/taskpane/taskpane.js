@@ -47,28 +47,11 @@ async function saveAndCommitVersion() {
     const timestamp = new Date().toISOString();
     const user = "User One";
 
-    const metadata = {
-      title: "Supplier Audit Checklist",
-      docId: `DOC-${timestamp.slice(0, 10).replace(/-/g, "")}-001`,
-      revision: newVersion,
-      date: timestamp.slice(0, 10),
-      owner: user,
-      approvers: "John Smith",
-      team: "Quality",
-      standard: "ISO 9001",
-    };
-
-    const newRow = [
-      newVersion,
-      timestamp,
-      user,
-      JSON.stringify(jsonData),
-      JSON.stringify(metadata),
-    ];
-    versionSheet.getRange("A1:E1").values = [["Version", "Timestamp", "User", "Data", "Metadata"]];
-    versionSheet.getRange(`A${existing.length + 2}:E${existing.length + 2}`).values = [newRow];
-
+    const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
+    versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
+    versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
+
     await writeMetadataSheet(context, newVersion, user);
 
     currentVersion = newVersion;
@@ -204,7 +187,7 @@ async function writeMetadataSheet(context, version, user) {
 
 async function showMetadataSheet() {
   console.log("CALLING>>>>>>>");
-
+  
   await Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
     sheet.load("isNullObject");
