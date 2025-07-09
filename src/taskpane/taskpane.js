@@ -19,15 +19,14 @@ let currentVersion = null;
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
     const sheets = context.workbook.worksheets;
-    sheets.load("items");
+    sheets.load("items/name, items/visibility");
     await context.sync();
-    
+
     if (sheets.items.length === 0) {
-      const sheet = sheets.add("Sheet1");
+      const sheet = sheets.add("InitialSheet");
       sheet.activate();
       await context.sync();
     } else {
-      // ensure one sheet is visible and active
       const visibleSheets = sheets.items.filter(s => s.visibility === "Visible");
       if (visibleSheets.length === 0) {
         const fallback = sheets.items[0];
@@ -37,7 +36,12 @@ async function saveAndCommitVersion() {
       }
     }
 
-    const values = range.isNullObject ? [] : range.values;
+    const sheet = context.workbook.worksheets.getActiveWorksheet();
+    const rangeObj = sheet.getUsedRangeOrNullObject();
+    rangeObj.load("values");
+    await context.sync();
+
+    const values = rangeObj.isNullObject ? [] : rangeObj.values;
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
     const jsonData = data.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
