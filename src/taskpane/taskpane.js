@@ -25,20 +25,20 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     const values = range.isNullObject ? [] : range.values;
+    const headers = values[0] || [];
+    const data = values.length > 1 ? values.slice(1) : [];
+
+    // Only proceed if there is some data or header
+    if (headers.length === 0 && data.length === 0) {
+      console.log("Nothing to save");
+      return;
+    }
+
     let jsonData = [];
-
-    if (values.length > 0 && values[0].length > 0) {
-      const headers = values[0];
-      const dataRows = values.length > 1 ? values.slice(1) : [];
-
-      const validHeaders = headers.filter(h => h !== "");
-      if (validHeaders.length === 0) {
-        jsonData = { raw: values };
-      } else {
-        jsonData = dataRows.map((row) =>
-          Object.fromEntries(row.map((val, i) => [headers[i], val]))
-        );
-      }
+    if (headers.length && data.length) {
+      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    } else if (headers.length) {
+      jsonData = [{}];
     }
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
@@ -136,10 +136,20 @@ async function loadVersionByVersion(versionToLoad) {
     await context.sync();
 
     const values = range.values;
-    const match = values.find((row) => row[0] === versionToLoad);
-    if (!match) return console.log("Version not found");
+    const match = values.find((row) => (row[0] || "").trim() === versionToLoad);
+    if (!match) {
+      console.log("Version not found");
+      return;
+    }
 
-    const parsed = JSON.parse(match[3]);
+    let json = [];
+    try {
+      json = JSON.parse(match[3] || "[]");
+    } catch (e) {
+      console.error("Failed to parse version data:", e);
+      return;
+    }
+
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
@@ -147,28 +157,24 @@ async function loadVersionByVersion(versionToLoad) {
 
     if (!used.isNullObject) used.clear();
 
-    let dataToWrite = [];
-    if (Array.isArray(parsed)) {
-      if (parsed.length > 0) {
-        const headers = Object.keys(parsed[0]);
-        dataToWrite = [headers, ...parsed.map((obj) => headers.map((h) => obj[h]))];
-      }
-    } else if (parsed.raw) {
-      dataToWrite = parsed.raw;
-    }
-
-    if (dataToWrite.length > 0) {
-      const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, dataToWrite.length, dataToWrite[0].length);
-      rangeToWrite.values = dataToWrite;
-    } else {
+    if (!Array.isArray(json) || json.length === 0 || !json[0] || Object.keys(json[0]).length === 0) {
       activeSheet.getRange("A1").values = [[""]];
+      await context.sync();
+      currentVersion = versionToLoad;
+      renderVersionHistory();
+      return;
     }
 
+    const headers = Object.keys(json[0]);
+    const data = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
+    const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
+    rangeToWrite.values = data;
     await context.sync();
     currentVersion = versionToLoad;
     renderVersionHistory();
   });
 }
+
 
 async function writeMetadataSheet(context, version, user) {
   const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
