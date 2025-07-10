@@ -176,10 +176,6 @@ async function writeMetadataSheet(context, version, user) {
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
     sheet = metadataSheet;
-    const used = sheet.getUsedRangeOrNullObject();
-    used.load("address");
-    await context.sync();
-    if (!used.isNullObject) used.clear();
   }
 
   const today = new Date().toISOString().split("T")[0];
