@@ -2,49 +2,10 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
-    // document.getElementById("viewUserInfoBtn")?.addEventListener("click", fetchUserProfile);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     renderVersionHistory();
   }
 });
-
-// async function getUserAccessToken() {
-//   return new Promise((resolve, reject) => {
-//     Office.context.auth.getAccessTokenAsync((result) => {
-//       if (result.status === Office.AsyncResultStatus.Succeeded) {
-//         resolve(result.value);
-//       } else {
-//         reject(result.error.message);
-//       }
-//     });
-//   });
-// }
-
-// Fetch profile from Microsoft Graph
-// async function fetchUserProfile() {
-//   try {
-//     const token = await getUserAccessToken();
-
-//     const response = await fetch("https://graph.microsoft.com/v1.0/me", {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//         Accept: "application/json",
-//       },
-//     });
-
-//     const user = await response.json();
-//     console.log("User profile:", user);
-
-//     document.getElementById("output").textContent = `
-//       Name: ${user.displayName}
-//       Email: ${user.mail || user.userPrincipalName}
-//       Job Title: ${user.jobTitle || "N/A"}
-//     `;
-//   } catch (err) {
-//     console.log(err, "eeeeeeeee");
-//     // document.getElementById("output").textContent = "Error fetching user info: " + err;
-//   }
-// }
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -66,7 +27,13 @@ async function saveAndCommitVersion() {
     const values = range.isNullObject ? [] : range.values;
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
-    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+
+    let jsonData = [];
+    if (headers.length && data.length) {
+      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    } else if (headers.length) {
+      jsonData = [{}];
+    }
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
     await context.sync();
@@ -174,7 +141,7 @@ async function loadVersionByVersion(versionToLoad) {
 
     if (!used.isNullObject) used.clear();
 
-    if (!json || json.length === 0) {
+    if (!json || json.length === 0 || Object.keys(json[0]).length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
       currentVersion = versionToLoad;
