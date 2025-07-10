@@ -27,19 +27,7 @@ async function saveAndCommitVersion() {
     const values = range.isNullObject ? [] : range.values;
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
-
-    // Only proceed if there is some data or header
-    if (headers.length === 0 && data.length === 0) {
-      console.log("Nothing to save");
-      return;
-    }
-
-    let jsonData = [];
-    if (headers.length && data.length) {
-      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
-    } else if (headers.length) {
-      jsonData = [{}];
-    }
+    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
     await context.sync();
@@ -59,11 +47,28 @@ async function saveAndCommitVersion() {
     const timestamp = new Date().toISOString();
     const user = "User One";
 
-    const newRow = [newVersion, timestamp, user, JSON.stringify(jsonData)];
-    versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
-    versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
-    await context.sync();
+    const metadata = {
+      title: "Supplier Audit Checklist",
+      docId: `DOC-${timestamp.slice(0, 10).replace(/-/g, "")}-001`,
+      revision: newVersion,
+      date: timestamp.slice(0, 10),
+      owner: user,
+      approvers: "John Smith",
+      team: "Quality",
+      standard: "ISO 9001",
+    };
 
+    const newRow = [
+      newVersion,
+      timestamp,
+      user,
+      JSON.stringify(jsonData),
+      JSON.stringify(metadata),
+    ];
+    versionSheet.getRange("A1:E1").values = [["Version", "Timestamp", "User", "Data", "Metadata"]];
+    versionSheet.getRange(`A${existing.length + 2}:E${existing.length + 2}`).values = [newRow];
+
+    await context.sync();
     await writeMetadataSheet(context, newVersion, user);
 
     currentVersion = newVersion;
@@ -95,6 +100,7 @@ async function renderVersionHistory() {
       }
 
       const range = sheet.getUsedRange();
+
       range.load("values");
       await context.sync();
 
@@ -136,20 +142,10 @@ async function loadVersionByVersion(versionToLoad) {
     await context.sync();
 
     const values = range.values;
-    const match = values.find((row) => (row[0] || "").trim() === versionToLoad);
-    if (!match) {
-      console.log("Version not found");
-      return;
-    }
+    const match = values.find((row) => row[0] === versionToLoad);
+    if (!match) return console.log("Version not found");
 
-    let json = [];
-    try {
-      json = JSON.parse(match[3] || "[]");
-    } catch (e) {
-      console.error("Failed to parse version data:", e);
-      return;
-    }
-
+    const json = JSON.parse(match[3]);
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
@@ -157,7 +153,7 @@ async function loadVersionByVersion(versionToLoad) {
 
     if (!used.isNullObject) used.clear();
 
-    if (!Array.isArray(json) || json.length === 0 || !json[0] || Object.keys(json[0]).length === 0) {
+    if (!json || json.length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
       currentVersion = versionToLoad;
@@ -175,7 +171,6 @@ async function loadVersionByVersion(versionToLoad) {
   });
 }
 
-
 async function writeMetadataSheet(context, version, user) {
   const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
   metadataSheet.load("isNullObject");
@@ -187,10 +182,6 @@ async function writeMetadataSheet(context, version, user) {
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
     sheet = metadataSheet;
-    const used = sheet.getUsedRangeOrNullObject();
-    used.load("address");
-    await context.sync();
-    if (!used.isNullObject) used.clear();
   }
 
   const today = new Date().toISOString().split("T")[0];
