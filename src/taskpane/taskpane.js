@@ -6,7 +6,7 @@ Office.onReady((info) => {
   }
 });
 
-let currentVersion = null;
+let currentVersion = null; 
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
