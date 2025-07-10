@@ -3,14 +3,6 @@ Office.onReady((info) => {
     console.log("Excel Add-in is ready");
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
-
-    Excel.run(async (context) => {
-      const stored = await getStoredCurrentVersion(context);
-      if (stored) {
-        await loadVersionByVersion(stored);
-      }
-    });
-
     renderVersionHistory();
   }
 });
@@ -23,27 +15,7 @@ function getNextVersion(existingVersions) {
   return `${major}.${minor}.${patch}`;
 }
 
-async function getStoredCurrentVersion(context) {
-  const cvSheet = context.workbook.worksheets.getItemOrNullObject("CurrentVersion");
-  await context.sync();
-  if (cvSheet.isNullObject) return null;
-  const range = cvSheet.getRange("A1");
-  range.load("values");
-  await context.sync();
-  return range.values[0][0];
-}
-
-async function setStoredCurrentVersion(context, version) {
-  let cvSheet = context.workbook.worksheets.getItemOrNullObject("CurrentVersion");
-  await context.sync();
-  if (cvSheet.isNullObject) {
-    cvSheet = context.workbook.worksheets.add("CurrentVersion");
-    cvSheet.visibility = Excel.SheetVisibility.hidden;
-  }
-  const range = cvSheet.getRange("A1");
-  range.values = [[version]];
-  await context.sync();
-}
+let currentVersion = null;
 
 async function saveAndCommitVersion() {
   await Excel.run(async (context) => {
@@ -80,8 +52,9 @@ async function saveAndCommitVersion() {
     versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
 
-    await setStoredCurrentVersion(context, newVersion);
     await writeMetadataSheet(context, newVersion, user);
+
+    currentVersion = newVersion;
     console.log(`Version ${newVersion} saved.`);
     renderVersionHistory();
   });
@@ -119,12 +92,14 @@ async function renderVersionHistory() {
         return;
       }
 
-      const storedVersion = await getStoredCurrentVersion(context);
+      if (!currentVersion) {
+        currentVersion = values[values.length - 1][0];
+      }
 
       container.innerHTML = "";
       [...values].reverse().forEach((row) => {
         const [version, timestamp, user] = row;
-        const isCurrent = version === storedVersion;
+        const isCurrent = version === currentVersion;
         const div = document.createElement("div");
         div.className = "version-entry";
         div.onclick = () => loadVersionByVersion(version);
@@ -163,7 +138,7 @@ async function loadVersionByVersion(versionToLoad) {
     if (!json || json.length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
-      await setStoredCurrentVersion(context, versionToLoad);
+      currentVersion = versionToLoad;
       renderVersionHistory();
       return;
     }
@@ -173,8 +148,7 @@ async function loadVersionByVersion(versionToLoad) {
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
-
-    await setStoredCurrentVersion(context, versionToLoad);
+    currentVersion = versionToLoad;
     renderVersionHistory();
   });
 }
@@ -190,6 +164,10 @@ async function writeMetadataSheet(context, version, user) {
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
     sheet = metadataSheet;
+    const used = sheet.getUsedRangeOrNullObject();
+    used.load("address");
+    await context.sync();
+    if (!used.isNullObject) used.clear();
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -202,7 +180,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${data.length}`);
