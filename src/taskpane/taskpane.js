@@ -166,7 +166,7 @@ async function writeMetadataSheet(context, version, user) {
   const today = new Date().toISOString().split("T")[0];
   const docId = `DOC-${today.replace(/-/g, "")}-001`;
   const meta = [
-    ["Document Title", "Supplier Audit Checklist"],
+    ["Document Title", "The Doc"],
     ["Document ID", docId],
     ["Revision Number", version],
     ["Date of Issue", today],
@@ -178,6 +178,8 @@ async function writeMetadataSheet(context, version, user) {
 
   const range = sheet.getRange(`A1:B${meta.length}`);
   range.values = meta;
+  await context.sync();
+  sheet.getRange("B1:B" + meta.length).format.autofitColumns();
   await context.sync();
 }
 
