@@ -30,8 +30,8 @@ async function saveAndCommitVersion() {
     const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     if (jsonData.length === 0) {
-      console.warn("No data found in sheet. Skipping version save.");
-      alert("No data found to save. Please enter some data first.");
+      console.log("No data found in sheet. Skipping version save.");
+      console.log("No data found to save. Please enter some data first.");
       return;
     }
 
