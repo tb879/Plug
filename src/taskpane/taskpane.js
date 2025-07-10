@@ -3,10 +3,17 @@ Office.onReady((info) => {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     renderVersionHistory();
+
+    Excel.run(async (context) => {
+      const sheet = context.workbook.worksheets.getActiveWorksheet();
+      sheet.onChanged.add(handleChangeEvent);
+      await context.sync();
+    });
   }
 });
 
-let currentVersion = null; 
+let currentVersion = null;
+const criticalZones = [{ sheet: "Sheet1", range: "A1:C10" }];
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -31,9 +38,7 @@ async function saveAndCommitVersion() {
 
     if (headers.length === 0 && dataRows.length === 0) {
       storedData = []; // Completely blank
-    } else if (headers.length > 0 && dataRows.length === 0) {
-      storedData = { headers, data: [] };
-    } else if (headers.length && dataRows.length) {
+    } else {
       storedData = { headers, data: dataRows };
     }
 
@@ -60,9 +65,71 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     await writeMetadataSheet(context, newVersion, user);
+    await sheet.protection.protect(); // Lock sheet
 
     currentVersion = newVersion;
     renderVersionHistory();
+  });
+}
+
+async function handleChangeEvent(eventArgs) {
+  const inZone = criticalZones.some((zone) => {
+    return (
+      zone.sheet === eventArgs.worksheetId && eventArgs.address.startsWith(zone.range.split(":")[0])
+    );
+  });
+
+  if (inZone) {
+    const reason = await promptForChangeReason();
+    await logChange(eventArgs, reason);
+  }
+}
+
+function promptForChangeReason() {
+  return new Promise((resolve) => {
+    Office.context.ui.displayDialogAsync(
+      "https://tb879.github.io/Plug/index.html?dialog=true",
+      { height: 40, width: 30 },
+      (result) => {
+        const dialog = result.value;
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+          dialog.close();
+          resolve(arg.message);
+        });
+      }
+    );
+  });
+}
+
+async function logChange(eventArgs, reason) {
+  await Excel.run(async (context) => {
+    let sheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
+    await context.sync();
+    if (sheet.isNullObject) {
+      sheet = context.workbook.worksheets.add("ChangeLog");
+      sheet.visibility = Excel.SheetVisibility.hidden;
+      sheet.getRange("A1:F1").values = [
+        ["Timestamp", "Sheet", "Address", "Type", "Details", "Reason"],
+      ];
+    }
+
+    const time = new Date().toISOString();
+    const logRow = [
+      time,
+      eventArgs.worksheetId,
+      eventArgs.address,
+      eventArgs.changeType,
+      JSON.stringify(eventArgs),
+      reason,
+    ];
+
+    const used = sheet.getUsedRangeOrNullObject();
+    used.load("values");
+    await context.sync();
+
+    const rowNum = used.isNullObject ? 2 : used.values.length + 1;
+    sheet.getRange(`A${rowNum}:F${rowNum}`).values = [logRow];
+    await context.sync();
   });
 }
 
@@ -73,7 +140,7 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find(row => row[0] === versionToLoad);
+    const match = range.values.find((row) => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
@@ -84,7 +151,6 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
-      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -173,7 +239,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
