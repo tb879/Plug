@@ -51,11 +51,11 @@ async function saveAndCommitVersion() {
     versionSheet.getRange("A1:D1").values = [["Version", "Timestamp", "User", "Data"]];
     versionSheet.getRange(`A${existing.length + 2}:D${existing.length + 2}`).values = [newRow];
     await context.sync();
-
+    currentVersion = newVersion;
     await writeMetadataSheet(context, newVersion, user);
 
-    currentVersion = newVersion;
-    console.log(`Version ${newVersion} saved.`);
+    // currentVersion = newVersion;
+    // console.log(`Version ${newVersion} saved.`);
     renderVersionHistory();
   });
 }
@@ -155,16 +155,18 @@ async function loadVersionByVersion(versionToLoad) {
 }
 
 async function writeMetadataSheet(context, version, user) {
-  const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
-  metadataSheet.load("isNullObject");
+  // const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+  // metadataSheet.load("isNullObject");
+  const sheetName = `Metadata_${version}`;
+  const metaSheet = context.workbook.worksheets.getItemOrNullObject(sheetName);
   await context.sync();
 
   let sheet;
-  if (metadataSheet.isNullObject) {
-    sheet = context.workbook.worksheets.add("Metadata");
+  if (metaSheet.isNullObject) {
+    sheet = context.workbook.worksheets.add(sheetName);
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
-    sheet = metadataSheet;
+    sheet = metaSheet;
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -186,20 +188,23 @@ async function writeMetadataSheet(context, version, user) {
 }
 
 async function showMetadataSheet() {
-  console.log("CALLING>>>>>>>");
-
+  if (!currentVersion) {
+    console.log("No version selected.");
+    return;
+  }
   await Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
-    sheet.load("isNullObject");
+    const sheetName = `Metadata_${currentVersion}`;
+    const metaSheet = context.workbook.worksheets.getItemOrNullObject(sheetName);
+    metaSheet.load("isNullObject");
     await context.sync();
 
-    if (sheet.isNullObject) {
+    if (metaSheet.isNullObject) {
       console.log("No metadata sheet found.");
       return;
     }
 
-    sheet.visibility = Excel.SheetVisibility.visible;
-    sheet.activate();
+    metaSheet.visibility = Excel.SheetVisibility.visible;
+    metaSheet.activate();
     await context.sync();
   });
 }
