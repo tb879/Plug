@@ -29,6 +29,14 @@ async function saveAndCommitVersion() {
     const data = values.length > 1 ? values.slice(1) : [];
     const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
+    if (jsonData.length === 0) {
+      console.warn("No data found in sheet. Skipping version save.");
+      alert("No data found to save. Please enter some data first.");
+      return;
+    }
+
+    console.log("Saving data snapshot:", jsonData);
+
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
     await context.sync();
 
@@ -111,6 +119,7 @@ async function renderVersionHistory() {
         container.appendChild(div);
       });
     } catch (e) {
+      console.error(e);
       container.innerHTML = "No version history found.";
     }
   });
@@ -118,6 +127,7 @@ async function renderVersionHistory() {
 
 async function loadVersionByVersion(versionToLoad) {
   await Excel.run(async (context) => {
+    console.log(`Loading version: ${versionToLoad}`);
     const sheet = context.workbook.worksheets.getItem("VersionHistory");
     const range = sheet.getUsedRange();
     range.load("values");
@@ -125,9 +135,14 @@ async function loadVersionByVersion(versionToLoad) {
 
     const values = range.values;
     const match = values.find((row) => row[0] === versionToLoad);
-    if (!match) return console.log("Version not found");
+    if (!match) {
+      console.warn("Version not found");
+      return;
+    }
 
+    console.log("Stored JSON string:", match[3]);
     const json = JSON.parse(match[3]);
+
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
@@ -136,7 +151,7 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (!json || json.length === 0) {
-      activeSheet.getRange("A1").values = [[""]];
+      activeSheet.getRange("A1:B1").values = [["No Data", "This version contains no saved data"]];
       await context.sync();
       currentVersion = versionToLoad;
       renderVersionHistory();
@@ -148,6 +163,7 @@ async function loadVersionByVersion(versionToLoad) {
     const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
     rangeToWrite.values = data;
     await context.sync();
+
     currentVersion = versionToLoad;
     renderVersionHistory();
   });
