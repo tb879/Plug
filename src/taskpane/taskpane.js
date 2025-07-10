@@ -27,6 +27,12 @@ async function saveAndCommitVersion() {
     const values = range.isNullObject ? [] : range.values;
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
+
+    if (!headers.length || !data.length) {
+      console.warn("No data to save. Skipping version creation.");
+      return;
+    }
+
     const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
@@ -83,7 +89,6 @@ async function renderVersionHistory() {
       }
 
       const range = sheet.getUsedRange();
-
       range.load("values");
       await context.sync();
 
@@ -136,7 +141,7 @@ async function loadVersionByVersion(versionToLoad) {
 
     if (!used.isNullObject) used.clear();
 
-    if (!json || json.length === 0) {
+    if (!json || json.length === 0 || Object.keys(json[0]).length === 0) {
       activeSheet.getRange("A1").values = [[""]];
       await context.sync();
       currentVersion = versionToLoad;
@@ -165,6 +170,10 @@ async function writeMetadataSheet(context, version, user) {
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
     sheet = metadataSheet;
+    const used = sheet.getUsedRangeOrNullObject();
+    used.load("address");
+    await context.sync();
+    if (!used.isNullObject) used.clear();
   }
 
   const today = new Date().toISOString().split("T")[0];
