@@ -83,6 +83,7 @@ async function renderVersionHistory() {
       }
 
       const range = sheet.getUsedRange();
+
       range.load("values");
       await context.sync();
 
@@ -154,14 +155,13 @@ async function loadVersionByVersion(versionToLoad) {
 }
 
 async function writeMetadataSheet(context, version, user) {
-  const sheetName = `Metadata_${version}`;
-  const metadataSheet = context.workbook.worksheets.getItemOrNullObject(sheetName);
+  const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
   metadataSheet.load("isNullObject");
   await context.sync();
 
   let sheet;
   if (metadataSheet.isNullObject) {
-    sheet = context.workbook.worksheets.add(sheetName);
+    sheet = context.workbook.worksheets.add("Metadata");
     sheet.visibility = Excel.SheetVisibility.hidden;
   } else {
     sheet = metadataSheet;
@@ -169,9 +169,7 @@ async function writeMetadataSheet(context, version, user) {
 
   const today = new Date().toISOString().split("T")[0];
   const docId = `DOC-${today.replace(/-/g, "")}-001`;
-
   const data = [
-    ["Field", "Value"],
     ["Document Title", "Supplier Audit Checklist"],
     ["Document ID", docId],
     ["Revision Number", version],
@@ -179,7 +177,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${data.length}`);
@@ -188,19 +186,15 @@ async function writeMetadataSheet(context, version, user) {
 }
 
 async function showMetadataSheet() {
-  if (!currentVersion) {
-    console.warn("No version loaded.");
-    return;
-  }
+  console.log("CALLING>>>>>>>");
 
   await Excel.run(async (context) => {
-    const sheetName = `Metadata_${currentVersion}`;
-    const sheet = context.workbook.worksheets.getItemOrNullObject(sheetName);
+    const sheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
     sheet.load("isNullObject");
     await context.sync();
 
     if (sheet.isNullObject) {
-      console.log(`Metadata for version ${currentVersion} not found.`);
+      console.log("No metadata sheet found.");
       return;
     }
 
