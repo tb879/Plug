@@ -2,14 +2,14 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:type="TaskPaneApp">
-  <Id>ae59cc4d-b123-4f55-b8e1-f1cfa3d7e9aa</Id>
+  <Id>0914ccfe-d05f-4317-bec4-3bf8be78e73b</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Tarun Excel Tools</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Excel Version Control"/>
-  <Description DefaultValue="Save Excel file revisions locally as JSON"/>
+  <DisplayName DefaultValue="Excel Graph API Tester"/>
+  <Description DefaultValue="Fetch Microsoft Graph profile using Excel Add-in"/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-    <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
+  <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
 
   <Hosts>
     <Host Name="Workbook" />
@@ -20,4 +20,10 @@
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
+
+  <WebApplicationInfo>
+    <Id>0914ccfe-d05f-4317-bec4-3bf8be78e73b</Id>
+    <Resource>https://graph.microsoft.com</Resource>
+    <Scopes>user.read</Scopes>
+  </WebApplicationInfo>
 </OfficeApp>
