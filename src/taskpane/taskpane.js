@@ -13,7 +13,9 @@ Office.onReady((info) => {
 });
 
 let currentVersion = null;
-const criticalZones = [{ sheet: "Sheet1", range: "A1:C10" }];
+const criticalZones = [
+  { sheet: "Sheet1", range: "A1:C10" }
+];
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -73,10 +75,8 @@ async function saveAndCommitVersion() {
 }
 
 async function handleChangeEvent(eventArgs) {
-  const inZone = criticalZones.some((zone) => {
-    return (
-      zone.sheet === eventArgs.worksheetId && eventArgs.address.startsWith(zone.range.split(":")[0])
-    );
+  const inZone = criticalZones.some(zone => {
+    return zone.sheet === eventArgs.worksheetId && eventArgs.address.startsWith(zone.range.split(":")[0]);
   });
 
   if (inZone) {
@@ -87,17 +87,13 @@ async function handleChangeEvent(eventArgs) {
 
 function promptForChangeReason() {
   return new Promise((resolve) => {
-    Office.context.ui.displayDialogAsync(
-      "https://tb879.github.io/Plug/index.html?dialog=true",
-      { height: 40, width: 30 },
-      (result) => {
-        const dialog = result.value;
-        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
-          dialog.close();
-          resolve(arg.message);
-        });
-      }
-    );
+    Office.context.ui.displayDialogAsync("https://tb879.github.io/Plug/index.html?dialog=true", { height: 40, width: 30 }, (result) => {
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+        dialog.close();
+        resolve(arg.message);
+      });
+    });
   });
 }
 
@@ -108,20 +104,11 @@ async function logChange(eventArgs, reason) {
     if (sheet.isNullObject) {
       sheet = context.workbook.worksheets.add("ChangeLog");
       sheet.visibility = Excel.SheetVisibility.hidden;
-      sheet.getRange("A1:F1").values = [
-        ["Timestamp", "Sheet", "Address", "Type", "Details", "Reason"],
-      ];
+      sheet.getRange("A1:F1").values = [["Timestamp", "Sheet", "Address", "Type", "Details", "Reason"]];
     }
 
     const time = new Date().toISOString();
-    const logRow = [
-      time,
-      eventArgs.worksheetId,
-      eventArgs.address,
-      eventArgs.changeType,
-      JSON.stringify(eventArgs),
-      reason,
-    ];
+    const logRow = [time, eventArgs.worksheetId, eventArgs.address, eventArgs.changeType, JSON.stringify(eventArgs), reason];
 
     const used = sheet.getUsedRangeOrNullObject();
     used.load("values");
@@ -140,11 +127,16 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find((row) => row[0] === versionToLoad);
+    const match = range.values.find(row => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
+
+    // ✅ Unprotect before writing
+    await activeSheet.protection.unprotect();
+    await context.sync();
+
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
     await context.sync();
@@ -239,7 +231,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"],
+    ["Standard", "ISO 9001"]
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
