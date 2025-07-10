@@ -2,15 +2,18 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     console.log("Excel Add-in is ready");
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
-    document.getElementById("viewMetadataBtn").addEventListener("click", fetchUserProfile);
+    document.getElementById("viewUserInfoBtn")?.addEventListener("click", fetchUserProfile);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     renderVersionHistory();
   }
 });
 
 async function getUserAccessToken() {
+  console.log(Office, "ooooooooo");
+  console.log(Office?.auth, "aaaaaaaaaa");
+  
   return new Promise((resolve, reject) => {
-    Office.auth.getAccessTokenAsync({ allowSignInPrompt: true }, (result) => {
+    Office?.auth?.getAccessTokenAsync({ allowSignInPrompt: true }, (result) => {
       if (result.status === Office.AsyncResultStatus.Succeeded) {
         resolve(result.value);
       } else {
@@ -42,7 +45,7 @@ async function fetchUserProfile() {
     `;
   } catch (err) {
     console.log(err, "eeeeeeeee");
-    document.getElementById("output").textContent = "Error fetching user info: " + err;
+    // document.getElementById("output").textContent = "Error fetching user info: " + err;
   }
 }
 
