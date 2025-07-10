@@ -25,14 +25,23 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     const values = range.isNullObject ? [] : range.values;
-    const headers = values[0] || [];
-    const data = values.length > 1 ? values.slice(1) : [];
-
     let jsonData = [];
-    if (headers.length && data.length) {
-      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
-    } else if (headers.length) {
-      jsonData = [{}];
+
+    if (values.length > 0 && values[0].length > 0) {
+      const headers = values[0];
+      const dataRows = values.length > 1 ? values.slice(1) : [];
+
+      // Check if headers are all empty
+      const validHeaders = headers.filter(h => h !== "");
+      if (validHeaders.length === 0) {
+        // Fallback: Treat whole range as matrix without headers
+        jsonData = { raw: values };
+      } else {
+        // Normal case: map data using headers
+        jsonData = dataRows.map((row) =>
+          Object.fromEntries(row.map((val, i) => [headers[i], val]))
+        );
+      }
     }
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
@@ -133,7 +142,7 @@ async function loadVersionByVersion(versionToLoad) {
     const match = values.find((row) => row[0] === versionToLoad);
     if (!match) return console.log("Version not found");
 
-    const json = JSON.parse(match[3]);
+    const parsed = JSON.parse(match[3]);
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
@@ -141,18 +150,23 @@ async function loadVersionByVersion(versionToLoad) {
 
     if (!used.isNullObject) used.clear();
 
-    if (!json || json.length === 0 || Object.keys(json[0]).length === 0) {
-      activeSheet.getRange("A1").values = [[""]];
-      await context.sync();
-      currentVersion = versionToLoad;
-      renderVersionHistory();
-      return;
+    let dataToWrite = [];
+    if (Array.isArray(parsed)) {
+      if (parsed.length > 0) {
+        const headers = Object.keys(parsed[0]);
+        dataToWrite = [headers, ...parsed.map((obj) => headers.map((h) => obj[h]))];
+      }
+    } else if (parsed.raw) {
+      dataToWrite = parsed.raw;
     }
 
-    const headers = Object.keys(json[0]);
-    const data = [headers, ...json.map((obj) => headers.map((h) => obj[h]))];
-    const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, data.length, headers.length);
-    rangeToWrite.values = data;
+    if (dataToWrite.length > 0) {
+      const rangeToWrite = activeSheet.getRangeByIndexes(0, 0, dataToWrite.length, dataToWrite[0].length);
+      rangeToWrite.values = dataToWrite;
+    } else {
+      activeSheet.getRange("A1").values = [[""]];
+    }
+
     await context.sync();
     currentVersion = versionToLoad;
     renderVersionHistory();
