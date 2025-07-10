@@ -30,9 +30,13 @@ async function saveAndCommitVersion() {
 
     let jsonData = [];
     if (headers.length && data.length) {
-      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
-    } else if (headers.length) {
-      jsonData = [{}];
+      jsonData = data.map((row) =>
+        Object.fromEntries(row.map((val, i) => [headers[i], val]))
+      );
+    } else {
+      // Don't save version if there's no usable data
+      console.log("No data to save. Skipping version creation.");
+      return;
     }
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
