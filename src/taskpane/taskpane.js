@@ -28,12 +28,18 @@ async function saveAndCommitVersion() {
     const headers = values[0] || [];
     const data = values.length > 1 ? values.slice(1) : [];
 
-    if (!headers.length || !data.length) {
-      console.warn("No data to save. Skipping version creation.");
+    // Only proceed if there is some data or header
+    if (headers.length === 0 && data.length === 0) {
+      console.log("Nothing to save");
       return;
     }
 
-    const jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    let jsonData = [];
+    if (headers.length && data.length) {
+      jsonData = data.map((row) => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+    } else if (headers.length) {
+      jsonData = [{}];
+    }
 
     let versionSheet = context.workbook.worksheets.getItemOrNullObject("VersionHistory");
     await context.sync();
