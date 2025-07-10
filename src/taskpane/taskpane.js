@@ -31,13 +31,10 @@ async function saveAndCommitVersion() {
       const headers = values[0];
       const dataRows = values.length > 1 ? values.slice(1) : [];
 
-      // Check if headers are all empty
       const validHeaders = headers.filter(h => h !== "");
       if (validHeaders.length === 0) {
-        // Fallback: Treat whole range as matrix without headers
         jsonData = { raw: values };
       } else {
-        // Normal case: map data using headers
         jsonData = dataRows.map((row) =>
           Object.fromEntries(row.map((val, i) => [headers[i], val]))
         );
@@ -173,44 +170,39 @@ async function loadVersionByVersion(versionToLoad) {
   });
 }
 
-function writeMetadataSheet(context, version, user) {
-  return Excel.run(async (ctx) => {
-    const metadataSheet = ctx.workbook.worksheets.getItemOrNullObject("Metadata");
-    metadataSheet.load("isNullObject");
-    await ctx.sync();
+async function writeMetadataSheet(context, version, user) {
+  const metadataSheet = context.workbook.worksheets.getItemOrNullObject("Metadata");
+  metadataSheet.load("isNullObject");
+  await context.sync();
 
-    let sheet;
-    if (metadataSheet.isNullObject) {
-      sheet = ctx.workbook.worksheets.add("Metadata");
-      sheet.visibility = Excel.SheetVisibility.hidden;
-    } else {
-      sheet = metadataSheet;
-      const used = sheet.getUsedRangeOrNullObject();
-      used.load("address");
-      await ctx.sync();
-      if (!used.isNullObject) used.clear();
-    }
+  let sheet;
+  if (metadataSheet.isNullObject) {
+    sheet = context.workbook.worksheets.add("Metadata");
+    sheet.visibility = Excel.SheetVisibility.hidden;
+  } else {
+    sheet = metadataSheet;
+    const used = sheet.getUsedRangeOrNullObject();
+    used.load("address");
+    await context.sync();
+    if (!used.isNullObject) used.clear();
+  }
 
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const docId = `DOC-${formattedDate.replace(/-/g, "")}-001`;
-    const data = [
-      ["Document Title", "Supplier Audit Checklist"],
-      ["Document ID", docId],
-      ["Revision Number", version],
-      ["Date of Issue", formattedDate],
-      ["Owner/Author", user],
-      ["Approver(s)", "John Smith"],
-      ["Department/Team", "Quality"],
-      ["Standard", "ISO 9001"],
-    ];
+  const today = new Date().toISOString().split("T")[0];
+  const docId = `DOC-${today.replace(/-/g, "")}-001`;
+  const data = [
+    ["Document Title", "Supplier Audit Checklist"],
+    ["Document ID", docId],
+    ["Revision Number", version],
+    ["Date of Issue", today],
+    ["Owner/Author", user],
+    ["Approver(s)", "John Smith"],
+    ["Department/Team", "Quality"],
+    ["Standard", "ISO 9001"],
+  ];
 
-    const range = sheet.getRange(`A1:B${data.length}`);
-    range.values = data;
-    range.format.autofitColumns();
-    range.format.autofitRows();
-    await ctx.sync();
-  });
+  const range = sheet.getRange(`A1:B${data.length}`);
+  range.values = data;
+  await context.sync();
 }
 
 async function showMetadataSheet() {
