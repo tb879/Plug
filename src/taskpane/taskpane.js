@@ -10,7 +10,9 @@ Office.onReady((info) => {
 
 async function getUserAccessToken() {
   return new Promise((resolve, reject) => {
-    Office.auth.getAccessTokenAsync({ allowSignInPrompt: true }, (result) => {
+    Office.context.auth.getAccessTokenAsync((result) => {
+      console.log(result, "rrrrrrrrrrrr");
+      
       if (result.status === Office.AsyncResultStatus.Succeeded) {
         resolve(result.value);
       } else {
