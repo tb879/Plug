@@ -198,7 +198,7 @@ async function showMetadataSheet() {
 }
 
 async function fetchUserDetails() {
-  Office.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
+  Office.context.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
     if (result.status === Office.AsyncResultStatus.Succeeded) {
       const accessToken = result.value;
       console.log("Access Token:", accessToken);
