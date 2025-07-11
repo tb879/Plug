@@ -2,7 +2,7 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:type="TaskPaneApp">
-  <Id>f8cdef31-a31e-4b4a-93e4-5f571e91255a</Id>
+  <Id>8f34d98d-68f3-4f4a-8a89-7b0f7c7bb608</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Tarun Excel Tools</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
@@ -22,8 +22,8 @@
   <Permissions>ReadWriteDocument</Permissions>
 
   <WebApplicationInfo>
-    <Id>f8cdef31-a31e-4b4a-93e4-5f571e91255a</Id>
+    <Id>8f34d98d-68f3-4f4a-8a89-7b0f7c7bb608</Id>
     <Resource>https://graph.microsoft.com</Resource>
-    <Scopes>user.read</Scopes>
+    <!-- <Scopes>user.read</Scopes> -->
   </WebApplicationInfo>
 </OfficeApp>

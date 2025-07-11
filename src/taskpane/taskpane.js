@@ -2,20 +2,12 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
+    document.getElementById("fetchUserDetails")?.addEventListener("click", fetchUserDetails);
     renderVersionHistory();
-
-    Excel.run(async (context) => {
-      const sheet = context.workbook.worksheets.getActiveWorksheet();
-      sheet.onChanged.add(handleChangeEvent);
-      await context.sync();
-    });
   }
 });
 
 let currentVersion = null;
-const criticalZones = [
-  { sheet: "Sheet1", range: "A1:C10" }
-];
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -40,7 +32,9 @@ async function saveAndCommitVersion() {
 
     if (headers.length === 0 && dataRows.length === 0) {
       storedData = []; // Completely blank
-    } else {
+    } else if (headers.length > 0 && dataRows.length === 0) {
+      storedData = { headers, data: [] };
+    } else if (headers.length && dataRows.length) {
       storedData = { headers, data: dataRows };
     }
 
@@ -67,56 +61,9 @@ async function saveAndCommitVersion() {
     await context.sync();
 
     await writeMetadataSheet(context, newVersion, user);
-    await sheet.protection.protect(); // Lock sheet
 
     currentVersion = newVersion;
     renderVersionHistory();
-  });
-}
-
-async function handleChangeEvent(eventArgs) {
-  const inZone = criticalZones.some(zone => {
-    return zone.sheet === eventArgs.worksheetId && eventArgs.address.startsWith(zone.range.split(":")[0]);
-  });
-
-  if (inZone) {
-    const reason = await promptForChangeReason();
-    await logChange(eventArgs, reason);
-  }
-}
-
-function promptForChangeReason() {
-  return new Promise((resolve) => {
-    Office.context.ui.displayDialogAsync("https://tb879.github.io/Plug/index.html?dialog=true", { height: 40, width: 30 }, (result) => {
-      const dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
-        dialog.close();
-        resolve(arg.message);
-      });
-    });
-  });
-}
-
-async function logChange(eventArgs, reason) {
-  await Excel.run(async (context) => {
-    let sheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
-    await context.sync();
-    if (sheet.isNullObject) {
-      sheet = context.workbook.worksheets.add("ChangeLog");
-      sheet.visibility = Excel.SheetVisibility.hidden;
-      sheet.getRange("A1:F1").values = [["Timestamp", "Sheet", "Address", "Type", "Details", "Reason"]];
-    }
-
-    const time = new Date().toISOString();
-    const logRow = [time, eventArgs.worksheetId, eventArgs.address, eventArgs.changeType, JSON.stringify(eventArgs), reason];
-
-    const used = sheet.getUsedRangeOrNullObject();
-    used.load("values");
-    await context.sync();
-
-    const rowNum = used.isNullObject ? 2 : used.values.length + 1;
-    sheet.getRange(`A${rowNum}:F${rowNum}`).values = [logRow];
-    await context.sync();
   });
 }
 
@@ -132,17 +79,13 @@ async function loadVersionByVersion(versionToLoad) {
 
     const parsed = JSON.parse(match[3]);
     const activeSheet = context.workbook.worksheets.getActiveWorksheet();
-
-    // ✅ Unprotect before writing
-    await activeSheet.protection.unprotect();
-    await context.sync();
-
     const used = activeSheet.getUsedRangeOrNullObject();
     used.load("address");
     await context.sync();
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
+      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -252,4 +195,36 @@ async function showMetadataSheet() {
     sheet.activate();
     await context.sync();
   });
+}
+
+async function fetchUserDetails() {
+  Office.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
+    if (result.status === Office.AsyncResultStatus.Succeeded) {
+      const accessToken = result.value;
+      console.log("Access Token:", accessToken);
+      callMicrosoftGraph(accessToken);
+    } else {
+      console.error("Failed to get token:", result.error);
+    }
+  });
+}
+
+async function callMicrosoftGraph(token) {
+  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.log("Graph Error:", error);
+    return;
+  }
+
+  const user = await response.json();
+  console.log("User Info:", user);
+
+  // Example: show user name
+  // document.getElementById("userName").innerText = `Hello, ${user.displayName}`;
 }
