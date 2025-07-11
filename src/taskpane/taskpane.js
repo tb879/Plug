@@ -1,11 +1,8 @@
 // A placeholder for your critical zones configuration.
-// You can customize this object to match your specific templates.
-// Key: Worksheet Name
-// Value: Array of critical ranges or table names
+// It is now specific to your sheet "Book 5" and only defines a range.
 const criticalZones = {
-  "Data": [
-    { type: "range", address: "A1:C5" }, // A critical range
-    { type: "table", name: "Table1" } // A critical table
+  "Book 5": [
+    { type: "range", address: "A1:C5" }
   ]
 };
 
@@ -263,18 +260,6 @@ async function isChangeInCriticalZone(context, sheet, changedAddress) {
       if (!intersection.isNullObject) {
         return true;
       }
-    } else if (zone.type === "table") {
-      const criticalTable = sheet.tables.getItemOrNullObject(zone.name);
-      criticalTable.load("isNullObject, address");
-      await context.sync();
-      if (!criticalTable.isNullObject) {
-        const intersection = criticalTable.getIntersectionOrNullObject(changedAddress);
-        intersection.load("isNullObject");
-        await context.sync();
-        if (!intersection.isNullObject) {
-          return true;
-        }
-      }
     }
   }
   return false;
@@ -285,12 +270,12 @@ async function isChangeInCriticalZone(context, sheet, changedAddress) {
  * @param {string} worksheetId The ID of the worksheet where the change occurred.
  * @param {string} changedAddress The address of the edited range.
  */
-function promptAndLogChange(worksheetId, changedAddress) {
+function promptAndLogChange(worksheetId, changedAddress, dialogUrl) {
   // Office.context.ui.displayDialogAsync can only be called from an HTTPS page.
   // Make sure your add-in is served over HTTPS for this to work.
-  const dialogUrl = `${window.location.origin}/dialog.html?address=${encodeURIComponent(changedAddress)}`;
+  const url = dialogUrl || `${window.location.origin}/dialog.html?address=${encodeURIComponent(changedAddress)}`;
 
-  Office.context.ui.displayDialogAsync(dialogUrl, {
+  Office.context.ui.displayDialogAsync(url, {
     height: 25,
     width: 35
   }, asyncResult => {
@@ -325,7 +310,7 @@ async function writeChangeLog(worksheetId, changedAddress, description) {
       sheet.visibility = Excel.SheetVisibility.hidden;
       sheet.getRange("A1:E1").values = [["Timestamp", "User", "Sheet", "Address", "Description"]];
     }
-    
+
     // Load the sheet name based on its ID
     const changedSheet = context.workbook.worksheets.get(worksheetId);
     changedSheet.load("name");
