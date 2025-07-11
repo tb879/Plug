@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="https://https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <title>Excel Manager</title>
     <style>
       body {
@@ -73,30 +73,6 @@
         border-radius: 50%;
         display: inline-block;
       }
-
-      #changePrompt {
-        display: none;
-        position: fixed;
-        top: 30%;
-        left: 30%;
-        width: 300px;
-        background: white;
-        border: 1px solid #ccc;
-        padding: 20px;
-        z-index: 9999;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      }
-
-      #changePrompt textarea {
-        width: 100%;
-        height: 60px;
-        margin-top: 10px;
-      }
-
-      #changePrompt button {
-        margin-top: 10px;
-        margin-right: 10px;
-      }
     </style>
   </head>
   <body>
@@ -108,15 +84,7 @@
       <h3>Version History</h3>
       <div id="versionList">Loading...</div>
     </div>
-
-    <div id="changePrompt">
-      <h4>Critical Zone Edit</h4>
-      <p id="promptMessage"></p>
-      <textarea id="changeReason" placeholder="Enter reason..."></textarea><br>
-      <button onclick="submitChangeReason()">Submit</button>
-      <button onclick="cancelChangeReason()">Cancel</button>
-    </div>
-
+    <script src="https://https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <script src="taskpane.js"></script>
   </body>
 </html>
