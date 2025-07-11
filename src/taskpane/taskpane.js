@@ -2,63 +2,12 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
-
+    document.getElementById("login")?.addEventListener("click", fetchUserDetails);
     renderVersionHistory();
-    registerCriticalZoneMonitor();
   }
 });
 
 let currentVersion = null;
-const criticalZones = ["A1:C10", "E1:E10"];
-const editLog = [];
-
-function registerCriticalZoneMonitor() {
-  Excel.run(async (context) => {
-    const workbook = context.workbook;
-    const sheets = workbook.worksheets;
-    sheets.load("items/name");
-    await context.sync();
-
-    sheets.items.forEach((sheet) => {
-      const ws = sheets.getItem(sheet.name);
-      ws.onChanged.add(onCriticalEditHandler);
-    });
-    await context.sync();
-  });
-}
-
-function onCriticalEditHandler(eventArgs) {
-  const address = eventArgs.address;
-  const sheetName = eventArgs.worksheetId;
-
-  const isCritical = criticalZones.some(zone => isAddressInRange(address, zone));
-
-  if (isCritical) {
-    const reason = prompt(`Critical zone edited at ${address} in sheet ${sheetName}. Please enter reason:`);
-    if (reason !== null) {
-      const timestamp = new Date().toISOString();
-      editLog.push({ address, reason, timestamp });
-      console.log("Edit logged:", { address, reason, timestamp });
-    }
-  }
-}
-
-function isAddressInRange(address, zone) {
-  try {
-    const parse = (a) => {
-      const [, col, row] = a.match(/([A-Z]+)([0-9]+)/);
-      return { col: colToNum(col), row: parseInt(row) };
-    };
-
-    const colToNum = (col) => [...col].reduce((acc, c) => acc * 26 + c.charCodeAt(0) - 64, 0);
-
-    const [start, end] = zone.split(":"), a = parse(address), s = parse(start), e = parse(end);
-    return a.col >= s.col && a.col <= e.col && a.row >= s.row && a.row <= e.row;
-  } catch (e) {
-    return false;
-  }
-}
-
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -82,7 +31,7 @@ async function saveAndCommitVersion() {
     let storedData = [];
 
     if (headers.length === 0 && dataRows.length === 0) {
-      storedData = [];
+      storedData = []; // Completely blank
     } else if (headers.length > 0 && dataRows.length === 0) {
       storedData = { headers, data: [] };
     } else if (headers.length && dataRows.length) {
@@ -136,6 +85,7 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
+      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -245,4 +195,36 @@ async function showMetadataSheet() {
     sheet.activate();
     await context.sync();
   });
+}
+
+async function fetchUserDetails() {
+  Office.context.auth.getAccessTokenAsync({ forceConsent: true }, function (result) {
+    if (result.status === Office.AsyncResultStatus.Succeeded) {
+      const accessToken = result.value;
+      console.log("Access Token:", accessToken);
+      callMicrosoftGraph(accessToken);
+    } else {
+      console.error("Failed to get token:", result.error);
+    }
+  });
+}
+
+async function callMicrosoftGraph(token) {
+  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.log("Graph Error:", error);
+    return;
+  }
+
+  const user = await response.json();
+  console.log("User Info:", user);
+
+  // Example: show user name
+  // document.getElementById("userName").innerText = `Hello, ${user.displayName}`;
 }
