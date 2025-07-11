@@ -2,7 +2,6 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
-    document.getElementById("fetchUserDetails")?.addEventListener("click", fetchUserDetails);
     renderVersionHistory();
     monitorCriticalEdits();
   }
@@ -17,23 +16,52 @@ function isCritical(address) {
   return criticalZones.some(zone => address.includes(zone));
 }
 
-async function monitorCriticalEdits() {
-  await Excel.run(async (context) => {
+function monitorCriticalEdits() {
+  Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getActiveWorksheet();
-    sheet.onChanged.add(async (eventArgs) => {
-      const address = eventArgs.address;
-      if (isCritical(address)) {
-        const reason = prompt(`You changed a critical cell at ${address}. Describe the reason:`);
-        if (reason !== null) {
-          const timestamp = new Date().toISOString();
-          editLog.push({ address, reason, timestamp });
-          console.log("Edit logged:", { address, reason, timestamp });
-        }
-      }
-    });
+    await context.sync(); // Ensure sheet is loaded
+
+    sheet.onChanged.add(onCriticalEditHandler); // Register the event
     await context.sync();
   });
 }
+
+function onCriticalEditHandler(eventArgs) {
+  const address = eventArgs.address;
+
+  // Critical zones can be a list of A1:C10 ranges — simple string match
+  const criticalZones = ["A1:C10", "E1:E10"];
+  const isCritical = criticalZones.some(zone => addressInZone(address, zone));
+
+  if (isCritical) {
+    const reason = prompt(`You changed a critical cell at ${address}. Describe the reason:`);
+    if (reason !== null) {
+      const timestamp = new Date().toISOString();
+      console.log("Edit logged:", { address, reason, timestamp });
+    }
+  }
+}
+
+// Simple range matching
+function addressInZone(address, zone) {
+  // E.g., check if B2 is inside A1:C10
+  const [zoneStart, zoneEnd] = zone.split(":");
+  const rangeRegex = /([A-Z]+)([0-9]+)/;
+
+  const [, startCol, startRow] = zoneStart.match(rangeRegex);
+  const [, endCol, endRow] = zoneEnd.match(rangeRegex);
+  const [, cellCol, cellRow] = address.match(rangeRegex);
+
+  const colToNum = (col) => [...col].reduce((sum, ch) => sum * 26 + (ch.charCodeAt(0) - 64), 0);
+
+  return (
+    colToNum(cellCol) >= colToNum(startCol) &&
+    colToNum(cellCol) <= colToNum(endCol) &&
+    parseInt(cellRow) >= parseInt(startRow) &&
+    parseInt(cellRow) <= parseInt(endRow)
+  );
+}
+
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
