@@ -74,7 +74,7 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find(row => row[0] === versionToLoad);
+    const match = range.values.find((row) => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
@@ -174,7 +174,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
@@ -198,22 +198,23 @@ async function showMetadataSheet() {
 }
 
 async function fetchUserDetails() {
-  Office.context.auth.getAccessTokenAsync(function (result) {
-    if (result.status === Office.AsyncResultStatus.Succeeded) {
-      const accessToken = result.value;
-      console.log("Access Token:", accessToken);
-      callMicrosoftGraph(accessToken);
-    } else {
-      console.log("Failed to get token:", result.error);
-    }
-  });
+  try {
+    const accessToken = await Office.auth.getAccessToken({
+      allowSignInPrompt: true,
+      allowConsentPrompt: true,
+      forMSGraphAccess: true, // Recommended to signal that you will access Graph
+    });
+    console.log(accessToken, "aaaaaaaaaa");
+  } catch (error) {
+    console.log(error, "eeeeeeeee");
+  }
 }
 
 async function callMicrosoftGraph(token) {
   const response = await fetch("https://graph.microsoft.com/v1.0/me", {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {
