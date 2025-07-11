@@ -171,8 +171,8 @@ async function writeMetadataSheet(context, version, user) {
     ["Revision Number", version],
     ["Date of Issue", today],
     ["Owner/Author", user],
-    ["Approver(s)", "John Smith"],
-    ["Department/Team", "Quality"],
+    ["Approver(s)", "Approver"],
+    ["Department/Team", "IT"],
     ["Standard", "ISO 9001"]
   ];
 
