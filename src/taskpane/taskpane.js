@@ -1,22 +1,99 @@
-// A placeholder for your critical zones configuration.
-// It is now specific to your sheet "Book 5" and only defines a range.
-const criticalZones = {
-  "Book 5": [
-    { type: "range", address: "A1:C5" }
-  ]
-};
-
 Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
+    document.getElementById("addZoneBtn").addEventListener("click", () => {
+      const val = document.getElementById("zoneInput").value.trim();
+      if (val) CRITICAL_ZONES.push({ address: val, name: `Custom (${val})` });
+    });
+    
     renderVersionHistory();
-    // Start monitoring for changes once the add-in is ready
-    startChangeMonitoring();
+
+    Excel.run(async (context) => {
+      const sheet = context.workbook.worksheets.getActiveWorksheet();
+    
+      // Monitor selection changes (proxy for edits in Office.js)
+      sheet.onChanged.add(onCellChanged);
+      await context.sync();
+    });
+    
   }
 });
 
 let currentVersion = null;
+const CRITICAL_ZONES = [
+  { address: "A1:C10", name: "Header Table" },
+  { address: "E5:E15", name: "Finance Column" },
+];
+
+async function onCellChanged(event) {
+  const address = event.address;
+  const sheetName = event.worksheetId;
+
+  const zone = CRITICAL_ZONES.find(zone => isRangeIntersecting(address, zone.address));
+  if (zone) {
+    const reason = prompt(`You changed a CRITICAL zone: "${zone.name}" (${zone.address}).\n\nPlease describe your change:`);
+    if (reason) {
+      logEditChange(zone.name, address, reason);
+    }
+  }
+}
+
+function isRangeIntersecting(editedRange, criticalRange) {
+  const [startA, endA] = getRangeBounds(editedRange);
+  const [startB, endB] = getRangeBounds(criticalRange);
+
+  return (
+    startA.row <= endB.row &&
+    endA.row >= startB.row &&
+    startA.col <= endB.col &&
+    endA.col >= startB.col
+  );
+}
+
+function getRangeBounds(rangeAddress) {
+  const match = rangeAddress.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+  if (!match) return [{ row: 0, col: 0 }, { row: 0, col: 0 }];
+
+  const [, startCol, startRow, endCol, endRow] = match;
+  return [
+    { row: parseInt(startRow), col: colLetterToNumber(startCol) },
+    { row: parseInt(endRow), col: colLetterToNumber(endCol) },
+  ];
+}
+
+function colLetterToNumber(col) {
+  let num = 0;
+  for (let i = 0; i < col.length; i++) {
+    num = num * 26 + (col.charCodeAt(i) - 64);
+  }
+  return num;
+}
+
+async function logEditChange(zoneName, cellAddress, reason) {
+  await Excel.run(async (context) => {
+    let logSheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
+    await context.sync();
+
+    if (logSheet.isNullObject) {
+      logSheet = context.workbook.worksheets.add("ChangeLog");
+      logSheet.getRange("A1:E1").values = [["Timestamp", "User", "Zone", "Cell", "Change Description"]];
+    }
+
+    const time = new Date().toISOString();
+    const user = "User One"; // Optional: Use Graph API for identity if supported
+
+    const used = logSheet.getUsedRangeOrNullObject();
+    used.load("rowCount");
+    await context.sync();
+
+    const row = used.isNullObject ? 2 : used.rowCount + 1;
+    const range = logSheet.getRange(`A${row}:E${row}`);
+    range.values = [[time, user, zoneName, cellAddress, reason]];
+    await context.sync();
+  });
+}
+
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -203,133 +280,5 @@ async function showMetadataSheet() {
     sheet.visibility = Excel.SheetVisibility.visible;
     sheet.activate();
     await context.sync();
-  });
-}
-
-// --- New Change Management Functionality ---
-
-/**
- * Initializes the change monitoring system by adding an onChanged event listener
- * to the active worksheet.
- */
-async function startChangeMonitoring() {
-  await Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
-    sheet.onChanged.add(handleWorksheetChange);
-    await context.sync();
-    console.log("Change monitoring started on active sheet.");
-  });
-}
-
-/**
- * Event handler for worksheet changes. It checks if the change is in a critical zone.
- * @param {Excel.WorksheetChangedEvent} event
- */
-async function handleWorksheetChange(event) {
-  await Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.get(event.worksheetId);
-    sheet.load("name");
-    await context.sync();
-
-    // Check if the change occurred in a critical zone on the current sheet
-    const isCritical = await isChangeInCriticalZone(context, sheet, event.address);
-
-    if (isCritical) {
-      console.log(`Critical change detected in ${event.address}`);
-      promptAndLogChange(event.worksheetId, event.address);
-    }
-  });
-}
-
-/**
- * Checks if a given range address intersects with any of the defined critical zones.
- * @param {Excel.RequestContext} context
- * @param {Excel.Worksheet} sheet
- * @param {string} changedAddress The address of the changed range.
- * @returns {Promise<boolean>} True if the change is within a critical zone.
- */
-async function isChangeInCriticalZone(context, sheet, changedAddress) {
-  const zones = criticalZones[sheet.name] || [];
-  for (const zone of zones) {
-    if (zone.type === "range") {
-      const criticalRange = sheet.getRange(zone.address);
-      criticalRange.load("address");
-      const intersection = criticalRange.getIntersectionOrNullObject(changedAddress);
-      intersection.load("isNullObject");
-      await context.sync();
-      if (!intersection.isNullObject) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Prompts the user for a description and logs the change to the ChangeLog sheet.
- * @param {string} worksheetId The ID of the worksheet where the change occurred.
- * @param {string} changedAddress The address of the edited range.
- */
-function promptAndLogChange(worksheetId, changedAddress, dialogUrl) {
-  // Office.context.ui.displayDialogAsync can only be called from an HTTPS page.
-  // Make sure your add-in is served over HTTPS for this to work.
-  const url = dialogUrl || `${window.location.origin}/dialog.html?address=${encodeURIComponent(changedAddress)}`;
-
-  Office.context.ui.displayDialogAsync(url, {
-    height: 25,
-    width: 35
-  }, asyncResult => {
-    if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-      const dialog = asyncResult.value;
-      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (event) => {
-        const message = JSON.parse(event.message);
-        if (message.action === "logChange") {
-          dialog.close();
-          writeChangeLog(worksheetId, changedAddress, message.description);
-        }
-      });
-    } else {
-      console.error("Failed to open dialog: " + asyncResult.error.message);
-    }
-  });
-}
-
-/**
- * Writes the details of a critical change to a hidden ChangeLog sheet.
- * @param {string} worksheetId The ID of the worksheet.
- * @param {string} changedAddress The address of the changed range.
- * @param {string} description The user-provided change description.
- */
-async function writeChangeLog(worksheetId, changedAddress, description) {
-  await Excel.run(async (context) => {
-    let sheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
-    await context.sync();
-
-    if (sheet.isNullObject) {
-      sheet = context.workbook.worksheets.add("ChangeLog");
-      sheet.visibility = Excel.SheetVisibility.hidden;
-      sheet.getRange("A1:E1").values = [["Timestamp", "User", "Sheet", "Address", "Description"]];
-    }
-
-    // Load the sheet name based on its ID
-    const changedSheet = context.workbook.worksheets.get(worksheetId);
-    changedSheet.load("name");
-    await context.sync();
-
-    const usedRange = sheet.getUsedRangeOrNullObject();
-    usedRange.load("rowCount");
-    await context.sync();
-
-    const nextRow = usedRange.isNullObject ? 2 : usedRange.rowCount + 1;
-    const newRowData = [
-      new Date().toISOString(),
-      "User One", // Placeholder, you can get the actual user from a login service
-      changedSheet.name,
-      changedAddress,
-      description
-    ];
-    sheet.getRange(`A${nextRow}:E${nextRow}`).values = [newRowData];
-    await context.sync();
-    console.log("Change logged successfully.");
   });
 }
