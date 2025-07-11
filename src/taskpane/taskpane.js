@@ -166,7 +166,6 @@ async function writeMetadataSheet(context, version, user) {
   const docId = `DOC-${today.replace(/-/g, "")}-001`;
   const activeSheet = context.workbook.worksheets.getActiveWorksheet();
   activeSheet.load("name");
-  await context.sync();
   const documentTitle = activeSheet.name;
 
   const meta = [
