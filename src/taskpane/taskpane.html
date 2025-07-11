@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <script src="https://https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <title>Excel Manager</title>
     <style>
       body {
@@ -74,7 +74,6 @@
         display: inline-block;
       }
 
-      /* Change Prompt Modal */
       #changePrompt {
         display: none;
         position: fixed;
@@ -110,15 +109,14 @@
       <div id="versionList">Loading...</div>
     </div>
 
-    <!-- Change Reason Prompt -->
     <div id="changePrompt">
       <h4>Critical Zone Edit</h4>
       <p id="promptMessage"></p>
       <textarea id="changeReason" placeholder="Enter reason..."></textarea><br>
-      <button id="submitChangeReason">Submit</button>
-      <button id="cancelChangeReason">Cancel</button>
+      <button onclick="submitChangeReason()">Submit</button>
+      <button onclick="cancelChangeReason()">Cancel</button>
     </div>
-    <script src="https://https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
     <script src="taskpane.js"></script>
   </body>
 </html>

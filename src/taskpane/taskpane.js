@@ -2,15 +2,13 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
-    document.getElementById("submitChangeReason")?.addEventListener("click", submitChangeReason);
-    document.getElementById("cancelChangeReason")?.addEventListener("click", cancelChangeReason);
     renderVersionHistory();
 
+    // Attach to workbook-level (not sheet-level)
     Excel.run(async (context) => {
-      const sheet = context.workbook.worksheets.getActiveWorksheet();
-      sheet.onChanged.add(onCellChanged);
+      context.workbook.onChanged.add(onCellChanged);
       await context.sync();
-      console.log("✅ onChanged event attached to active sheet");
+      console.log("✅ Workbook-level onChanged event attached");
     });
   }
 });
@@ -47,8 +45,7 @@ function cancelChangeReason() {
 async function onCellChanged(event) {
   console.log("🛠️ Cell changed:", event.address);
   const address = event.address.replace(/^.*?!/, "");
-
-  const zone = CRITICAL_ZONES.find(zone => isRangeIntersecting(address, zone.address));
+  const zone = CRITICAL_ZONES.find(z => isRangeIntersecting(address, z.address));
   if (zone) {
     showChangePrompt(zone.name, address);
   }
@@ -57,7 +54,6 @@ async function onCellChanged(event) {
 function isRangeIntersecting(edited, critical) {
   const [aStart, aEnd] = getBounds(edited);
   const [bStart, bEnd] = getBounds(critical);
-
   return (
     aStart.row <= bEnd.row &&
     aEnd.row >= bStart.row &&
@@ -67,14 +63,11 @@ function isRangeIntersecting(edited, critical) {
 }
 
 function getBounds(address) {
-  const match = address.match(/([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?/);
+  const match = address.match(/([A-Z]+)(\d+)(?::([A-Z]+)?(\d+))?/);
   if (!match) return [{ row: 0, col: 0 }, { row: 0, col: 0 }];
   const startCol = colToNum(match[1]), startRow = parseInt(match[2]);
   const endCol = colToNum(match[3] || match[1]), endRow = parseInt(match[4] || match[2]);
-  return [
-    { row: startRow, col: startCol },
-    { row: endRow, col: endCol }
-  ];
+  return [{ row: startRow, col: startCol }, { row: endRow, col: endCol }];
 }
 
 function colToNum(col) {
@@ -108,6 +101,10 @@ async function logEditChange(zoneName, cellAddress, reason) {
   });
 }
 
+// Version control & metadata functions stay the same...
+
+// Include your saveAndCommitVersion, renderVersionHistory, showMetadataSheet, etc.
+// You don’t need to change those for this feature.
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
   const lastVersion = existingVersions[existingVersions.length - 1][0];
@@ -173,7 +170,7 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find(row => row[0] === versionToLoad);
+    const match = range.values.find((row) => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
@@ -272,7 +269,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
