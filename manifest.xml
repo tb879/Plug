@@ -4,7 +4,7 @@
            xsi:type="TaskPaneApp">
   <Id>86521247-6328-47c8-8bcf-7abc2749e2a2</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Tarun Excel Tools</ProviderName>
+  <ProviderName>Excel Tools</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Excel Graph API Tester"/>
   <Description DefaultValue="Fetch Microsoft Graph profile using Excel Add-in"/>

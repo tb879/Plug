@@ -4,10 +4,36 @@ Office.onReady((info) => {
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     document.getElementById("fetchUserDetails")?.addEventListener("click", fetchUserDetails);
     renderVersionHistory();
+    monitorCriticalEdits();
   }
 });
 
 let currentVersion = null;
+
+const criticalZones = ["A1:C10", "E1:E10"];
+const editLog = [];
+
+function isCritical(address) {
+  return criticalZones.some(zone => address.includes(zone));
+}
+
+async function monitorCriticalEdits() {
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getActiveWorksheet();
+    sheet.onChanged.add(async (eventArgs) => {
+      const address = eventArgs.address;
+      if (isCritical(address)) {
+        const reason = prompt(`You changed a critical cell at ${address}. Describe the reason:`);
+        if (reason !== null) {
+          const timestamp = new Date().toISOString();
+          editLog.push({ address, reason, timestamp });
+          console.log("Edit logged:", { address, reason, timestamp });
+        }
+      }
+    });
+    await context.sync();
+  });
+}
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -31,7 +57,7 @@ async function saveAndCommitVersion() {
     let storedData = [];
 
     if (headers.length === 0 && dataRows.length === 0) {
-      storedData = []; // Completely blank
+      storedData = [];
     } else if (headers.length > 0 && dataRows.length === 0) {
       storedData = { headers, data: [] };
     } else if (headers.length && dataRows.length) {
@@ -85,7 +111,6 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
-      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -195,36 +220,4 @@ async function showMetadataSheet() {
     sheet.activate();
     await context.sync();
   });
-}
-
-async function fetchUserDetails() {
-  Office.auth.getAccessTokenAsync(function (result) {
-    if (result.status === Office.AsyncResultStatus.Succeeded) {
-      const accessToken = result.value;
-      console.log("Access Token:", accessToken);
-      callMicrosoftGraph(accessToken);
-    } else {
-      console.log("Failed to get token:", result.error);
-    }
-  });
-}
-
-async function callMicrosoftGraph(token) {
-  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.log("Graph Error:", error);
-    return;
-  }
-
-  const user = await response.json();
-  console.log("User Info:", user);
-
-  // Example: show user name
-  // document.getElementById("userName").innerText = `Hello, ${user.displayName}`;
 }
