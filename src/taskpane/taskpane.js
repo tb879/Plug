@@ -73,7 +73,7 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find((row) => row[0] === versionToLoad);
+    const match = range.values.find(row => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
@@ -84,6 +84,7 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
+      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -170,9 +171,9 @@ async function writeMetadataSheet(context, version, user) {
     ["Revision Number", version],
     ["Date of Issue", today],
     ["Owner/Author", user],
-    ["Approver(s)", "The Approver"],
-    ["Department/Team", "IT"],
-    ["Standard", "ISO 9001"],
+    ["Approver(s)", "John Smith"],
+    ["Department/Team", "Quality"],
+    ["Standard", "ISO 9001"]
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
