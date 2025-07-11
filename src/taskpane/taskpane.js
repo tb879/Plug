@@ -164,12 +164,8 @@ async function writeMetadataSheet(context, version, user) {
 
   const today = new Date().toISOString().split("T")[0];
   const docId = `DOC-${today.replace(/-/g, "")}-001`;
-  const activeSheet = context.workbook.worksheets.getActiveWorksheet();
-  activeSheet.load("name");
-  const documentTitle = activeSheet.name;
-
   const meta = [
-    ["Document Title", documentTitle],
+    ["Document Title", "The Doc"],
     ["Document ID", docId],
     ["Revision Number", version],
     ["Date of Issue", today],
