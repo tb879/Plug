@@ -2,64 +2,61 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
+
     renderVersionHistory();
-    monitorCriticalEdits();
+    registerCriticalZoneMonitor();
   }
 });
 
 let currentVersion = null;
-
 const criticalZones = ["A1:C10", "E1:E10"];
 const editLog = [];
 
-function isCritical(address) {
-  return criticalZones.some(zone => address.includes(zone));
-}
-
-function monitorCriticalEdits() {
+function registerCriticalZoneMonitor() {
   Excel.run(async (context) => {
-    const sheet = context.workbook.worksheets.getActiveWorksheet();
-    await context.sync(); // Ensure sheet is loaded
+    const workbook = context.workbook;
+    const sheets = workbook.worksheets;
+    sheets.load("items/name");
+    await context.sync();
 
-    sheet.onChanged.add(onCriticalEditHandler); // Register the event
+    sheets.items.forEach((sheet) => {
+      const ws = sheets.getItem(sheet.name);
+      ws.onChanged.add(onCriticalEditHandler);
+    });
     await context.sync();
   });
 }
 
 function onCriticalEditHandler(eventArgs) {
   const address = eventArgs.address;
+  const sheetName = eventArgs.worksheetId;
 
-  // Critical zones can be a list of A1:C10 ranges — simple string match
-  const criticalZones = ["A1:C10", "E1:E10"];
-  const isCritical = criticalZones.some(zone => addressInZone(address, zone));
+  const isCritical = criticalZones.some(zone => isAddressInRange(address, zone));
 
   if (isCritical) {
-    const reason = prompt(`You changed a critical cell at ${address}. Describe the reason:`);
+    const reason = prompt(`Critical zone edited at ${address} in sheet ${sheetName}. Please enter reason:`);
     if (reason !== null) {
       const timestamp = new Date().toISOString();
+      editLog.push({ address, reason, timestamp });
       console.log("Edit logged:", { address, reason, timestamp });
     }
   }
 }
 
-// Simple range matching
-function addressInZone(address, zone) {
-  // E.g., check if B2 is inside A1:C10
-  const [zoneStart, zoneEnd] = zone.split(":");
-  const rangeRegex = /([A-Z]+)([0-9]+)/;
+function isAddressInRange(address, zone) {
+  try {
+    const parse = (a) => {
+      const [, col, row] = a.match(/([A-Z]+)([0-9]+)/);
+      return { col: colToNum(col), row: parseInt(row) };
+    };
 
-  const [, startCol, startRow] = zoneStart.match(rangeRegex);
-  const [, endCol, endRow] = zoneEnd.match(rangeRegex);
-  const [, cellCol, cellRow] = address.match(rangeRegex);
+    const colToNum = (col) => [...col].reduce((acc, c) => acc * 26 + c.charCodeAt(0) - 64, 0);
 
-  const colToNum = (col) => [...col].reduce((sum, ch) => sum * 26 + (ch.charCodeAt(0) - 64), 0);
-
-  return (
-    colToNum(cellCol) >= colToNum(startCol) &&
-    colToNum(cellCol) <= colToNum(endCol) &&
-    parseInt(cellRow) >= parseInt(startRow) &&
-    parseInt(cellRow) <= parseInt(endRow)
-  );
+    const [start, end] = zone.split(":"), a = parse(address), s = parse(start), e = parse(end);
+    return a.col >= s.col && a.col <= e.col && a.row >= s.row && a.row <= e.row;
+  } catch (e) {
+    return false;
+  }
 }
 
 
