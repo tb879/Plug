@@ -5,9 +5,11 @@ Office.onReady((info) => {
     renderVersionHistory();
 
     Excel.run(async (context) => {
+      console.log("✅ onChanged event attached to active sheet ONE.....");
       const sheet = context.workbook.worksheets.getActiveWorksheet();
       sheet.onChanged.add(onCellChanged);
       await context.sync();
+      console.log("✅ onChanged event attached to active sheet");
     });
   }
 });
@@ -207,6 +209,7 @@ async function showMetadataSheet() {
 }
 
 async function onCellChanged(event) {
+  console.log("🛠️ Cell changed:", event.address);
   const address = event.address.replace(/^.*?!/, "");
 
   const zone = CRITICAL_ZONES.find(zone => isRangeIntersecting(address, zone.address));
