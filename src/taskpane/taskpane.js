@@ -4,10 +4,59 @@ Office.onReady((info) => {
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
     document.getElementById("fetchUserDetails")?.addEventListener("click", fetchUserDetails);
     renderVersionHistory();
+
+    Excel.run(async (context) => {
+      const sheet = context.workbook.worksheets.getActiveWorksheet();
+      sheet.onChanged.add(handleChangeEvent);
+      await context.sync();
+    });
   }
 });
 
 let currentVersion = null;
+
+const criticalZones = [
+  { type: "range", value: "A1:C10" },
+  { type: "column", value: "B" },
+  { type: "table", value: "SalesTable" },
+];
+
+function isCriticalEdit(address) {
+  // Normalize for comparison
+  address = address.toUpperCase();
+
+  for (let zone of criticalZones) {
+    if (zone.type === "range" && zone.value === address) return true;
+
+    if (zone.type === "column") {
+      const match = address.match(/^([A-Z]+)\d*$/);
+      if (match && match[1] === zone.value.toUpperCase()) return true;
+    }
+
+    // For table checking, you can expand this later to compare table names via Office.js
+  }
+
+  return false;
+}
+
+async function handleChangeEvent(event) {
+  const address = event.address;
+  if (isCriticalEdit(address)) {
+    console.log("⚠️ Edit in critical zone at:", address);
+    // Here you can trigger popup or log (for FR-7/FR-8 later)
+    Office.context.ui.displayDialogAsync(
+      "https://tb879.github.io/Plug/src/taskpane/taskpane.html", // Replace with your local or deployed URL
+      { height: 30, width: 30, displayInIframe: true },
+      function (result) {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) {
+          console.log("Failed to open dialog");
+        }
+      }
+    );
+  } else {
+    console.log("Edit at", address);
+  }
+}
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -74,7 +123,7 @@ async function loadVersionByVersion(versionToLoad) {
     range.load("values");
     await context.sync();
 
-    const match = range.values.find(row => row[0] === versionToLoad);
+    const match = range.values.find((row) => row[0] === versionToLoad);
     if (!match) return console.warn("Version not found");
 
     const parsed = JSON.parse(match[3]);
@@ -174,7 +223,7 @@ async function writeMetadataSheet(context, version, user) {
     ["Owner/Author", user],
     ["Approver(s)", "John Smith"],
     ["Department/Team", "Quality"],
-    ["Standard", "ISO 9001"]
+    ["Standard", "ISO 9001"],
   ];
 
   const range = sheet.getRange(`A1:B${meta.length}`);
@@ -204,7 +253,7 @@ async function fetchUserDetails() {
       console.log("Access Token:", accessToken);
       callMicrosoftGraph(accessToken);
     } else {
-      console.error("Failed to get token:", result.error);
+      console.log("Failed to get token:", result.error);
     }
   });
 }
@@ -212,8 +261,8 @@ async function fetchUserDetails() {
 async function callMicrosoftGraph(token) {
   const response = await fetch("https://graph.microsoft.com/v1.0/me", {
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!response.ok) {

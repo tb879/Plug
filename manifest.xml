@@ -10,7 +10,11 @@
   <Description DefaultValue="Fetch Microsoft Graph profile using Excel Add-in"/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
   <SupportUrl DefaultValue="https://tb879.github.io/Plug"/>
-
+<Requirements>
+  <Sets DefaultMinVersion="1.3">
+    <Set Name="IdentityAPI"/>
+  </Sets>
+</Requirements>
   <Hosts>
     <Host Name="Workbook" />
   </Hosts>
@@ -24,6 +28,6 @@
   <WebApplicationInfo>
     <Id>8f34d98d-68f3-4f4a-8a89-7b0f7c7bb608</Id>
     <Resource>https://graph.microsoft.com</Resource>
-    <!-- <Scopes>user.read</Scopes> -->
+    <Scopes>https://graph.microsoft.com/User.Read</Scopes>
   </WebApplicationInfo>
 </OfficeApp>
