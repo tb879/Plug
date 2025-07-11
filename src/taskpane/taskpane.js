@@ -2,98 +2,22 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Excel) {
     document.getElementById("saveCommitBtn")?.addEventListener("click", saveAndCommitVersion);
     document.getElementById("viewMetadataBtn")?.addEventListener("click", showMetadataSheet);
-    document.getElementById("addZoneBtn").addEventListener("click", () => {
-      const val = document.getElementById("zoneInput").value.trim();
-      if (val) CRITICAL_ZONES.push({ address: val, name: `Custom (${val})` });
-    });
-    
     renderVersionHistory();
 
     Excel.run(async (context) => {
       const sheet = context.workbook.worksheets.getActiveWorksheet();
-    
-      // Monitor selection changes (proxy for edits in Office.js)
       sheet.onChanged.add(onCellChanged);
       await context.sync();
     });
-    
   }
 });
 
-let currentVersion = null;
 const CRITICAL_ZONES = [
   { address: "A1:C10", name: "Header Table" },
-  { address: "E5:E15", name: "Finance Column" },
+  { address: "E5:E15", name: "Finance Column" }
 ];
 
-async function onCellChanged(event) {
-  const address = event.address;
-  const sheetName = event.worksheetId;
-
-  const zone = CRITICAL_ZONES.find(zone => isRangeIntersecting(address, zone.address));
-  if (zone) {
-    const reason = prompt(`You changed a CRITICAL zone: "${zone.name}" (${zone.address}).\n\nPlease describe your change:`);
-    if (reason) {
-      logEditChange(zone.name, address, reason);
-    }
-  }
-}
-
-function isRangeIntersecting(editedRange, criticalRange) {
-  const [startA, endA] = getRangeBounds(editedRange);
-  const [startB, endB] = getRangeBounds(criticalRange);
-
-  return (
-    startA.row <= endB.row &&
-    endA.row >= startB.row &&
-    startA.col <= endB.col &&
-    endA.col >= startB.col
-  );
-}
-
-function getRangeBounds(rangeAddress) {
-  const match = rangeAddress.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
-  if (!match) return [{ row: 0, col: 0 }, { row: 0, col: 0 }];
-
-  const [, startCol, startRow, endCol, endRow] = match;
-  return [
-    { row: parseInt(startRow), col: colLetterToNumber(startCol) },
-    { row: parseInt(endRow), col: colLetterToNumber(endCol) },
-  ];
-}
-
-function colLetterToNumber(col) {
-  let num = 0;
-  for (let i = 0; i < col.length; i++) {
-    num = num * 26 + (col.charCodeAt(i) - 64);
-  }
-  return num;
-}
-
-async function logEditChange(zoneName, cellAddress, reason) {
-  await Excel.run(async (context) => {
-    let logSheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
-    await context.sync();
-
-    if (logSheet.isNullObject) {
-      logSheet = context.workbook.worksheets.add("ChangeLog");
-      logSheet.getRange("A1:E1").values = [["Timestamp", "User", "Zone", "Cell", "Change Description"]];
-    }
-
-    const time = new Date().toISOString();
-    const user = "User One"; // Optional: Use Graph API for identity if supported
-
-    const used = logSheet.getUsedRangeOrNullObject();
-    used.load("rowCount");
-    await context.sync();
-
-    const row = used.isNullObject ? 2 : used.rowCount + 1;
-    const range = logSheet.getRange(`A${row}:E${row}`);
-    range.values = [[time, user, zoneName, cellAddress, reason]];
-    await context.sync();
-  });
-}
-
+let currentVersion = null;
 
 function getNextVersion(existingVersions) {
   if (!existingVersions.length) return "1.0.0";
@@ -117,7 +41,7 @@ async function saveAndCommitVersion() {
     let storedData = [];
 
     if (headers.length === 0 && dataRows.length === 0) {
-      storedData = []; // Completely blank
+      storedData = [];
     } else if (headers.length > 0 && dataRows.length === 0) {
       storedData = { headers, data: [] };
     } else if (headers.length && dataRows.length) {
@@ -171,7 +95,6 @@ async function loadVersionByVersion(versionToLoad) {
     if (!used.isNullObject) used.clear();
 
     if (Array.isArray(parsed) && parsed.length === 0) {
-      // Blank sheet
       activeSheet.getRange("A1").values = [[""]];
     } else if (parsed.headers && Array.isArray(parsed.headers)) {
       const rows = [parsed.headers, ...(parsed.data || [])];
@@ -279,6 +202,72 @@ async function showMetadataSheet() {
     if (sheet.isNullObject) return;
     sheet.visibility = Excel.SheetVisibility.visible;
     sheet.activate();
+    await context.sync();
+  });
+}
+
+async function onCellChanged(event) {
+  const address = event.address.replace(/^.*?!/, "");
+
+  const zone = CRITICAL_ZONES.find(zone => isRangeIntersecting(address, zone.address));
+  if (zone) {
+    const reason = prompt(`You changed a CRITICAL zone: "${zone.name}" (${zone.address}).\n\nPlease describe your change:`);
+    if (reason) {
+      await logEditChange(zone.name, address, reason);
+    }
+  }
+}
+
+function isRangeIntersecting(edited, critical) {
+  const [aStart, aEnd] = getBounds(edited);
+  const [bStart, bEnd] = getBounds(critical);
+
+  return (
+    aStart.row <= bEnd.row &&
+    aEnd.row >= bStart.row &&
+    aStart.col <= bEnd.col &&
+    aEnd.col >= bStart.col
+  );
+}
+
+function getBounds(address) {
+  const match = address.match(/([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?/);
+  if (!match) return [{ row: 0, col: 0 }, { row: 0, col: 0 }];
+  const startCol = colToNum(match[1]), startRow = parseInt(match[2]);
+  const endCol = colToNum(match[3] || match[1]), endRow = parseInt(match[4] || match[2]);
+  return [
+    { row: startRow, col: startCol },
+    { row: endRow, col: endCol }
+  ];
+}
+
+function colToNum(col) {
+  let num = 0;
+  for (let i = 0; i < col.length; i++) {
+    num = num * 26 + (col.charCodeAt(i) - 64);
+  }
+  return num;
+}
+
+async function logEditChange(zoneName, cellAddress, reason) {
+  await Excel.run(async (context) => {
+    let logSheet = context.workbook.worksheets.getItemOrNullObject("ChangeLog");
+    await context.sync();
+
+    if (logSheet.isNullObject) {
+      logSheet = context.workbook.worksheets.add("ChangeLog");
+      logSheet.getRange("A1:E1").values = [["Timestamp", "User", "Zone", "Cell", "Change Description"]];
+    }
+
+    const now = new Date().toISOString();
+    const user = "User One";
+
+    const used = logSheet.getUsedRangeOrNullObject();
+    used.load("rowCount");
+    await context.sync();
+
+    const row = used.isNullObject ? 2 : used.rowCount + 1;
+    logSheet.getRange(`A${row}:E${row}`).values = [[now, user, zoneName, cellAddress, reason]];
     await context.sync();
   });
 }
